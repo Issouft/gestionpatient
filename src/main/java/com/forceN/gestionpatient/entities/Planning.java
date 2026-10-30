@@ -7,11 +7,13 @@ import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.SuperBuilder;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Data
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 

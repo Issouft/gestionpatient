@@ -2,15 +2,12 @@ package com.forceN.gestionpatient.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.Date;
 
 @Data
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
