@@ -12,5 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 public class Consultation extends AbstractEntity {
+          private String observation;
+          private String diagnostic;
 
 }
