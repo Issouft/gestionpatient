@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class DossierPatient {
+public class DossierPatient extends AbstractEntity {
 }
