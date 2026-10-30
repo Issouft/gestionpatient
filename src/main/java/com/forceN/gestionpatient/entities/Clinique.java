@@ -1,4 +1,4 @@
 package com.forceN.gestionpatient.entities;
 
-public class Clinique {
+public class Clinique extends AbstractEntity{
 }

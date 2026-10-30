@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class LigneOrdonnance {
+public class LigneOrdonnance extends AbstractEntity{
 }

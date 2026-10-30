@@ -16,7 +16,7 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class User {
+public class User extends AbstractEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer id;
