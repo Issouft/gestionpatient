@@ -2,13 +2,10 @@ package com.forceN.gestionpatient.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
@@ -19,7 +16,7 @@ public class Patient extends AbstractEntity{
     @Column(name = "prenom")
     private String prenom;
 
-    @Column(name = "nom")
+    @Column(name = "sexe")
     private String sexe;
 
     @Column(name = "age")
