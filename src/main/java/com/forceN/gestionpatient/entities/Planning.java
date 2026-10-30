@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 public class Planning extends AbstractEntity {
+
+
 }
