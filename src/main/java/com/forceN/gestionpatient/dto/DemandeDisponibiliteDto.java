@@ -1,4 +1,4 @@
-package com.forceN.gestionpatient.entities.dto;
+package com.forceN.gestionpatient.dto;
 
 import com.forceN.gestionpatient.entities.Medicament;
 import com.forceN.gestionpatient.entities.Patient;
