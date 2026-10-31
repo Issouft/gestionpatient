@@ -52,7 +52,7 @@ public class RendezVous extends AbstractEntity {
     @ToString.Exclude
     private Creneau creneau;
 
-    public void confirmer() {
+    /* public void confirmer() {
         this.statut = StatutRendezVous.CONFIRME;
     }
 
@@ -76,4 +76,6 @@ public class RendezVous extends AbstractEntity {
             creneau = null;
         }
     }
+
+     */
 }

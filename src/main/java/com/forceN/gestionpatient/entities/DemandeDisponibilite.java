@@ -45,6 +45,7 @@ public class DemandeDisponibilite extends AbstractEntity {
     @ToString.Exclude
     private Pharmacien pharmacien;
 
+    /*
     public void valider(String reponse) {
         this.statut = StatutDemande.VALIDEE;
         this.reponse = reponse;
@@ -54,4 +55,6 @@ public class DemandeDisponibilite extends AbstractEntity {
         this.statut = StatutDemande.REFUSEE;
         this.reponse = reponse;
     }
+
+     */
 }
