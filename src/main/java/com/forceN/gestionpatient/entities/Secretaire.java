@@ -1,24 +1,21 @@
 package com.forceN.gestionpatient.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import com.forceN.gestionpatient.entities.enums.Role;
+import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
+@Setter
+@ToString(callSuper = true)
 @SuperBuilder
-@AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class Secretaire extends AbstractEntity{
-    @Column(name = "nom")
-    private String nom;
+@Table(name = "secretaire")
+public class Secretaire extends Utilisateur {
 
-    @Column(name = "prenom")
-    private String prenom;
-
-    @Column(name = "contact")
-    private String contact;
-
-    @Column(name = "departement")
-    private String departement;
+    @PrePersist
+    void definirRole() {
+        setRole(Role.SECRETAIRE);
+    }
 }
