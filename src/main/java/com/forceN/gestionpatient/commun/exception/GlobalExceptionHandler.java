@@ -3,6 +3,8 @@ package com.forceN.gestionpatient.commun.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
@@ -19,6 +21,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ProblemDetail gererApplicationException(ApplicationException exception) {
         CodeErreur codeErreur = exception.getCodeErreur();
         return creerReponse(codeErreur.getStatut(), codeErreur.getTitre(), exception.getMessage(), codeErreur.name());
+    }
+
+    // Relancées pour que Spring Security les traite, sinon elles deviendraient des erreurs 500.
+    @ExceptionHandler({AccessDeniedException.class, AuthenticationException.class})
+    public void relancerErreurDeSecurite(Exception exception) throws Exception {
+        throw exception;
     }
 
     // Le détail reste dans les logs : il ne doit jamais être envoyé au client.
