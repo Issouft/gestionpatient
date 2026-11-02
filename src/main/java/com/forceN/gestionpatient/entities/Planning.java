@@ -1,35 +1,42 @@
 package com.forceN.gestionpatient.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.ManyToOne;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.SuperBuilder;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
-@Data
+@Getter
+@Setter
+@ToString(callSuper = true)
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
-
 @Entity
 public class Planning extends AbstractEntity {
 
-    @ManyToOne
+    // Medecin 1 — 1 Planning ("possède")
+    @OneToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "medecin_id", nullable = false, unique = true)
+    @ToString.Exclude
     private Medecin medecin;
 
-    private LocalDate date;
-    private LocalTime heureDebut;
-    private LocalTime heureFin;
-    private Integer dureeConsultation;
+    // Composition : Planning 1 — * Creneau ("contient")
+    @OneToMany(mappedBy = "planning", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @JsonIgnore
+    @ToString.Exclude
+    private List<Creneau> creneaux = new ArrayList<>();
 
-    @Enumerated(EnumType.STRING)
-    private EnumType type;
+    public void ajouterCreneau(Creneau creneau) {
+        creneaux.add(creneau);
+        creneau.setPlanning(this);
+    }
 
-    private String commentaire;
+    public void supprimerCreneau(Creneau creneau) {
+        creneaux.remove(creneau);
+        creneau.setPlanning(null);
+    }
 }

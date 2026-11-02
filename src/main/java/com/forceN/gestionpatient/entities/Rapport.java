@@ -1,24 +1,42 @@
 package com.forceN.gestionpatient.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import com.forceN.gestionpatient.entities.enums.TypeRapport;
+import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@ToString(callSuper = true)
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class Rapport extends AbstractEntity{
+public class Rapport extends AbstractEntity {
 
-    @Column(name = "type_Rapport")
-    private String typeRapport;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type_rapport")
+    private TypeRapport type;
+
+    @Column(name = "periode_debut")
+    private LocalDate periodeDebut;
+
+    @Column(name = "periode_fin")
+    private LocalDate periodeFin;
 
     @Column(name = "date_generation")
-    private Date dateGeneration;
+    private LocalDateTime dateGeneration;
 
+    // Attribut conservé de ton ancienne classe (absent du diagramme)
     @Column(name = "resume_rapport")
     private String resume;
+
+    // Administrateur 1 — * Rapport ("génère")
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "administrateur_id", nullable = false)
+    @ToString.Exclude
+    private Administrateur administrateur;
 }

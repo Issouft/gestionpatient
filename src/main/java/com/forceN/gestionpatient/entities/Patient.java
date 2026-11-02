@@ -1,32 +1,40 @@
 package com.forceN.gestionpatient.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import com.forceN.gestionpatient.entities.enums.Role;
+import com.forceN.gestionpatient.entities.enums.Sexe;
+import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-@Data
+import java.time.LocalDate;
+import java.time.Period;
+
+@Getter
+@Setter
+@ToString(callSuper = true)
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class Patient extends AbstractEntity{
-    @Column(name = "nom")
-    private String nom;
+@Table(name = "patient")
+public class Patient extends Utilisateur {
 
-    @Column(name = "prenom")
-    private String prenom;
+    @Column(name = "date_naissance")
+    private LocalDate dateNaissance;
 
-    @Column(name = "sexe")
-    private String sexe;
+    @Enumerated(EnumType.STRING)
+    private Sexe sexe;
 
-    @Column(name = "age")
-    private Integer age;
+    private String telephone;
+    private String adresse;
 
-    @Column(name = "contact")
-    private String contact;
+    /** Remplace l'ancien champ "age" : calculé à partir de la date de naissance. */
+    public Integer getAge() {
+        return dateNaissance == null ? null : Period.between(dateNaissance, LocalDate.now()).getYears();
+    }
 
-    @Column(name = "adress")
-    private String adress;
-
-
+    @PrePersist
+    void definirRole() {
+        setRole(Role.PATIENT);
+    }
 }
