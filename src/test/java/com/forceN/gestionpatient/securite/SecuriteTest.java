@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import static org.hamcrest.Matchers.not;
@@ -132,15 +133,16 @@ class SecuriteTest {
                 .build());
     }
 
+    @RequestMapping("/test-securite")
     @RestController
     static class ControleurDeTest {
 
-        @GetMapping("/test-securite/connecte")
+        @GetMapping("/connecte")
         String connecte() {
             return "ok";
         }
 
-        @GetMapping("/test-securite/medecin")
+        @GetMapping("/medecin")
         @PreAuthorize("hasRole('MEDECIN')")
         public String medecin() {
             return "ok";
