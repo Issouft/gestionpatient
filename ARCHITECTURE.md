@@ -97,7 +97,7 @@ private Integer medecinId;   // uniquement l'identifiant du médecin
 
 | Partie | Domaine | Responsable |
 |---|---|---|
-| 1 | `utilisateur` et `securite` : les comptes, les profils et la connexion | *à décider* |
+| 1 | `utilisateur` et `securite` : les comptes, les profils et la connexion | MLG |
 | 2 | `rendezvous` : les plannings, les créneaux, les rendez-vous et les notifications | *à décider* |
 | 3 | `medical` : les dossiers, les consultations, les ordonnances, les médicaments et les rapports | *à décider* |
 
