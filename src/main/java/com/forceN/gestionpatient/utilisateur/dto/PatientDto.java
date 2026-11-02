@@ -1,14 +1,9 @@
 package com.forceN.gestionpatient.utilisateur.dto;
 
-import com.forceN.gestionpatient.utilisateur.enums.Role;
-import com.forceN.gestionpatient.utilisateur.enums.Sexe;
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.PrePersist;
-
 import java.time.LocalDate;
 import java.time.Period;
+
+import com.forceN.gestionpatient.utilisateur.enums.Sexe;
 
 public class PatientDto {
 

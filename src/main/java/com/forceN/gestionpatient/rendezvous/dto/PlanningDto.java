@@ -1,15 +1,14 @@
 package com.forceN.gestionpatient.rendezvous.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.forceN.gestionpatient.rendezvous.entities.Creneau;
 import com.forceN.gestionpatient.utilisateur.entities.Medecin;
-import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Setter
