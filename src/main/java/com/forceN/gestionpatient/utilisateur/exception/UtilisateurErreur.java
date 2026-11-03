@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum UtilisateurErreur implements CodeErreur {
     // Ajouter les erreurs ici, avant le point-virgule. Exemple : NOM_ERREUR(HttpStatus.NOT_FOUND, "Titre de l'erreur");
+    EMAIL_DEJA_UTILISE(HttpStatus.CONFLICT, "L'email est déjà utilisé")
     ;
 
     private final HttpStatus statut;
