@@ -1,5 +1,7 @@
 package com.forceN.gestionpatient.utilisateur.dto;
 
+import com.forceN.gestionpatient.utilisateur.enums.Role;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,13 +11,15 @@ import lombok.Setter;
 @NoArgsConstructor
 public class UtilisateurDto {
 
+    private Integer id;
+
     private String nom;
 
     private String prenom;
 
     private String email;
 
-    private String password;
+    private Role role;
 
-    private boolean actif = true;
+    private boolean actif;
 }
