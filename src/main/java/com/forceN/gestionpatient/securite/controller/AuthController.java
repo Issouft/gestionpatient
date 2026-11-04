@@ -9,9 +9,12 @@ import com.forceN.gestionpatient.utilisateur.service.PatientService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -24,7 +27,8 @@ public class AuthController {
 
     // Route publique (voir SecurityConfig) : le visiteur n'a pas encore de compte, donc pas de jeton.
     @PostMapping("/inscription")
-    public PatientDto inscrire(@Valid @RequestBody PatientInscriptionDto dto){
+    @ResponseStatus(HttpStatus.CREATED)
+    public PatientDto inscrire(@Valid @RequestBody PatientInscriptionDto dto) {
         return patientService.inscrire(dto);
     }
 
