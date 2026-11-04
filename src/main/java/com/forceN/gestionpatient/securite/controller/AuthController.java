@@ -3,6 +3,10 @@ package com.forceN.gestionpatient.securite.controller;
 import com.forceN.gestionpatient.securite.dto.ConnexionReponse;
 import com.forceN.gestionpatient.securite.dto.ConnexionRequete;
 import com.forceN.gestionpatient.securite.service.AuthService;
+import com.forceN.gestionpatient.utilisateur.dto.PatientDto;
+import com.forceN.gestionpatient.utilisateur.dto.PatientInscriptionDto;
+import com.forceN.gestionpatient.utilisateur.service.PatientService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final PatientService patientService;
+
+    // Route publique (voir SecurityConfig) : le visiteur n'a pas encore de compte, donc pas de jeton.
+    @PostMapping("/inscription")
+    public PatientDto inscrire(@RequestBody PatientInscriptionDto dto){
+        return patientService.inscrire(dto);
+    }
 
     @PostMapping("/connexion")
     public ConnexionReponse connecter(@RequestBody ConnexionRequete requete) {

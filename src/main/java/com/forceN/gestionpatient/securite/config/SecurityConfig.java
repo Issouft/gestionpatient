@@ -36,6 +36,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Tout est fermé par défaut : une route publique doit être ajoutée ici.
                 .authorizeHttpRequests(routes -> routes
+                        .requestMatchers(HttpMethod.POST, "/auth/inscription").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/connexion").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(erreurs -> erreurs
