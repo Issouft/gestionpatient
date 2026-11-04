@@ -1,5 +1,7 @@
 package com.forceN.gestionpatient.utilisateur.service;
 
+import java.util.Locale;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +26,10 @@ public class PatientService {
      * Refuse un email déjà utilisé (409). Le rôle PATIENT est fixé par @PrePersist dans Patient.
      */
     public PatientDto inscrire(PatientInscriptionDto dto) {
-        if (utilisateurRepository.existsByEmail(dto.getEmail())) {
+        // Email normalisé (sans espaces, en minuscules) : "Awa@Exemple.sn" et "awa@exemple.sn"
+        // désignent le même compte. Sans cela, un même email pourrait créer deux comptes.
+        String email = dto.getEmail().trim().toLowerCase(Locale.ROOT);
+        if (utilisateurRepository.existsByEmail(email)) {
             throw new ApplicationException(UtilisateurErreur.EMAIL_DEJA_UTILISE,
                     "Connectez-vous ou choisissez un autre email");
         }
@@ -33,7 +38,7 @@ public class PatientService {
 
         patient.setNom(dto.getNom());
         patient.setPrenom(dto.getPrenom());
-        patient.setEmail(dto.getEmail());
+        patient.setEmail(email);
         // Seule l'empreinte BCrypt est stockée, jamais le mot de passe en clair.
         patient.setPassword(passwordEncoder.encode(dto.getMotDePasse()));
         patient.setDateNaissance(dto.getDateNaissance());
