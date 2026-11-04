@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/** Champs communs à tous les utilisateurs, utilisés dans les réponses. Jamais de mot de passe ici. */
 @Getter
 @Setter
 @NoArgsConstructor

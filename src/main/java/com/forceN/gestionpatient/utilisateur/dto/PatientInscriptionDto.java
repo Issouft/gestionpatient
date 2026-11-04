@@ -8,9 +8,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter 
-@Setter 
-@NoArgsConstructor 
+/**
+ * Données envoyées par le client pour s'inscrire (POST /auth/inscription).
+ * Ni id, ni rôle, ni actif : c'est le serveur qui les fixe.
+ */
+@Getter
+@Setter
+@NoArgsConstructor
 public class PatientInscriptionDto {
     // Champs communs à tous les utilisateurs
     private String nom;
@@ -18,7 +22,7 @@ public class PatientInscriptionDto {
     private String email;
     private String motDePasse;
 
-    // Champ propre aux patients
+    // Champs propres aux patients
     private LocalDate dateNaissance;
     private Sexe sexe;
     private String telephone;

@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/** Patient renvoyé au client. Les champs communs (id, nom, email...) viennent de UtilisateurDto. */
 @Getter
 @Setter
 @NoArgsConstructor
