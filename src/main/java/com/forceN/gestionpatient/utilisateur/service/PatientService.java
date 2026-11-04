@@ -4,6 +4,7 @@ import java.util.Locale;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.forceN.gestionpatient.commun.exception.ApplicationException;
 import com.forceN.gestionpatient.utilisateur.dto.PatientDto;
@@ -25,6 +26,9 @@ public class PatientService {
      * Crée un compte patient et le renvoie sans mot de passe.
      * Refuse un email déjà utilisé (409). Le rôle PATIENT est fixé par @PrePersist dans Patient.
      */
+    
+    // Tout ou rien : les deux INSERT (utilisateur puis patient) sont validés ensemble, ou annulés ensemble en cas d'erreur.
+    @Transactional
     public PatientDto inscrire(PatientInscriptionDto dto) {
         // Email normalisé (sans espaces, en minuscules) : "Awa@Exemple.sn" et "awa@exemple.sn"
         // désignent le même compte. Sans cela, un même email pourrait créer deux comptes.
