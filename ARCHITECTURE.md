@@ -1,6 +1,6 @@
 # Architecture du projet gestionpatient
 
-> **Statut : proposition à valider par le groupe.** Les fichiers sont déplacés sur la branche `MLG`, mais pas encore dans `main`. Lisez ce document et donnez votre avis avant la fusion.
+> **Statut : validé par le groupe et fusionné dans `main`.**
 
 ## 1. Pourquoi on change
 
@@ -183,7 +183,7 @@ public class StockInsuffisantException extends ApplicationException {
 
 Un **jeton JWT** est comme un badge signé par le serveur. Il est valable 60 minutes. Ensuite, il faut se reconnecter.
 
-**Toutes les routes sont fermées par défaut.** Pour en rendre une publique, il faut l'ajouter dans `SecurityConfig`. Ne le faites qu'après en avoir parlé au groupe.
+**Toutes les routes sont fermées par défaut.** Seules deux routes sont publiques, car le visiteur n'a pas encore de jeton : `POST /auth/inscription` et `POST /auth/connexion`. Pour en rendre une autre publique, il faut l'ajouter dans `SecurityConfig`. Ne le faites qu'après en avoir parlé au groupe.
 
 ### Les trois niveaux de protection
 

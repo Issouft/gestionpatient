@@ -6,6 +6,9 @@ import com.forceN.gestionpatient.securite.dto.ConnexionRequete;
 import com.forceN.gestionpatient.securite.exception.SecuriteErreur;
 import com.forceN.gestionpatient.securite.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Locale;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -19,13 +22,15 @@ public class AuthService {
     private final JwtService jwtService;
 
     public ConnexionReponse connecter(ConnexionRequete requete) {
+        // Même normalisation qu'à l'inscription (PatientService), sinon "Awa@Exemple.sn" serait refusé.
+        String email = requete.getEmail().trim().toLowerCase(Locale.ROOT);
         try {
             authenticationManager.authenticate(UsernamePasswordAuthenticationToken.unauthenticated(
-                    requete.getEmail(), requete.getMotDePasse()));
+                    email, requete.getMotDePasse()));
         } catch (AuthenticationException exception) {
             // Même message dans tous les cas, pour ne pas révéler quels comptes existent.
             throw new ApplicationException(SecuriteErreur.IDENTIFIANTS_INVALIDES, "Email ou mot de passe incorrect.");
         }
-        return new ConnexionReponse(jwtService.genererJeton(requete.getEmail()));
+        return new ConnexionReponse(jwtService.genererJeton(email));
     }
 }
