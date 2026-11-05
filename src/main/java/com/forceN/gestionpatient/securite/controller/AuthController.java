@@ -1,8 +1,10 @@
 package com.forceN.gestionpatient.securite.controller;
 
+import com.forceN.gestionpatient.securite.dto.ActivationRequete;
 import com.forceN.gestionpatient.securite.dto.ConnexionReponse;
 import com.forceN.gestionpatient.securite.dto.ConnexionRequete;
 import com.forceN.gestionpatient.securite.service.AuthService;
+import com.forceN.gestionpatient.securite.service.JetonActivationService;
 import com.forceN.gestionpatient.utilisateur.dto.PatientDto;
 import com.forceN.gestionpatient.utilisateur.dto.PatientInscriptionDto;
 import com.forceN.gestionpatient.utilisateur.service.PatientService;
@@ -24,6 +26,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final PatientService patientService;
+    private final JetonActivationService jetonActivationService;
 
     // Route publique (voir SecurityConfig) : le visiteur n'a pas encore de compte, donc pas de jeton.
     @PostMapping("/inscription")
@@ -36,4 +39,13 @@ public class AuthController {
     public ConnexionReponse connecter(@RequestBody ConnexionRequete requete) {
         return authService.connecter(requete);
     }
+
+    // Route publique : la personne n'a pas encore de mot de passe, donc pas de jeton de connexion.
+    // C'est le jeton d'activation reçu par email qui prouve son identité.
+    @PostMapping("/activation")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void activer(@Valid @RequestBody ActivationRequete requete) {
+        jetonActivationService.activer(requete.getJeton(), requete.getMotDePasse());
+    }
+
 }
