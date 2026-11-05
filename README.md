@@ -127,6 +127,46 @@ Les tests vérifient automatiquement que le code fonctionne. PostgreSQL doit êt
 
 Si tout va bien, vous verrez `BUILD SUCCESS`. Une longue trace d'erreur peut s'afficher pendant les tests : c'est normal, car l'un d'eux simule volontairement une panne.
 
+### Essayer l'API
+
+Avec Postman, par exemple, l'application démarrée.
+
+| Route | Accès | Ce qu'elle fait |
+|---|---|---|
+| `POST /auth/inscription` | Publique | Crée un compte patient. Répond `201 Created` |
+| `POST /auth/connexion` | Publique | Vérifie l'email et le mot de passe, puis renvoie un jeton |
+| `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe |
+
+**1. S'inscrire :** `POST http://localhost:8081/auth/inscription`, avec ce corps en JSON (*Body → raw → JSON*) :
+
+```json
+{
+  "nom": "Diop",
+  "prenom": "Awa",
+  "email": "awa@exemple.sn",
+  "motDePasse": "secret123",
+  "dateNaissance": "1995-04-12",
+  "sexe": "FEMININ",
+  "telephone": "771234567",
+  "adresse": "Dakar"
+}
+```
+
+Tous les champs sont obligatoires. Le mot de passe doit contenir entre 8 et 72 caractères.
+
+**2. Se connecter :** `POST http://localhost:8081/auth/connexion`, avec l'email et le mot de passe :
+
+```json
+{
+  "email": "awa@exemple.sn",
+  "motDePasse": "secret123"
+}
+```
+
+La réponse contient le jeton. Copiez-le.
+
+**3. Voir son profil :** `GET http://localhost:8081/utilisateurs/moi`, sans corps. Dans l'onglet *Authorization*, choisissez *Bearer Token* et collez le jeton. Sans jeton, la réponse est `401`.
+
 ## 3. Travailler avec Git
 
 ### Récupérer la dernière version du projet
@@ -195,7 +235,9 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 | `database "gestionpatient" does not exist` | La base n'a pas été créée | Suivez l'étape 2 |
 | `Connection refused` | PostgreSQL n'est pas démarré | Démarrez PostgreSQL |
 | Des `import` en rouge dans VS Code | L'éditeur n'a pas rechargé le projet | Lancez `Java: Clean Java Language Server Workspace` |
-| Réponse 401 sur toutes les demandes | Il faut être connecté pour accéder à cette route | Connectez-vous d'abord. Voir aussi la section 5 |
+| Réponse `401` | Il faut être connecté pour accéder à cette route, ou le jeton a expiré | Inscrivez-vous si besoin, connectez-vous, puis envoyez le jeton (voir « Essayer l'API ») |
+| Réponse `400` avec le code `DONNEES_INVALIDES` | Un champ manque ou est mal rempli | La liste `erreurs` de la réponse indique quel champ corriger |
+| Réponse `409` avec le code `EMAIL_DEJA_UTILISE` | Un compte existe déjà avec cet email | Connectez-vous, ou choisissez un autre email |
 
 ## 5. Où en est le projet
 
@@ -204,10 +246,12 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 - L'organisation du code par domaine
 - La gestion commune des erreurs
 - La sécurité : connexion, jetons et routes fermées par défaut
+- L'inscription d'un patient : données vérifiées, mot de passe chiffré, email unique
+- La consultation de son profil
 
 **Ce qui manque :**
 
-- [ ] **Créer un compte.** Aucun moyen n'existe encore, donc personne ne peut se connecter pour l'instant.
+- [ ] **Créer le personnel.** L'administrateur doit pouvoir créer les comptes des médecins, secrétaires et pharmaciens. Il reste aussi à choisir comment créer le premier administrateur.
 - [ ] **Corriger le contenu des DTO.** Beaucoup contiennent encore des entités.
 - [ ] **Écrire les fonctionnalités :** les contrôleurs, les services et les repositories de chaque domaine.
 - [ ] **Décider des droits de chaque rôle :** ce que chacun peut voir et faire.
