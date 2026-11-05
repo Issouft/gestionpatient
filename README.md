@@ -14,7 +14,7 @@ Application de gestion de patients, réalisée en groupe dans le cadre d'un cert
 | **Secrétaire** | Crée les dossiers des patients et gère les rendez-vous |
 | **Médecin** | Reçoit les patients, rédige les consultations et prescrit des médicaments |
 | **Pharmacien** | Gère le stock de médicaments et répond aux demandes de disponibilité |
-| **Administrateur** | Génère les rapports d'activité |
+| **Administrateur** | Crée les comptes du personnel et génère les rapports d'activité |
 
 ### Le parcours d'un patient
 
@@ -90,12 +90,18 @@ Créez le fichier `.env` avec ce contenu :
 ```properties
 spring.datasource.password=le_mot_de_passe_de_votre_PostgreSQL
 JWT_SECRET=une_longue_suite_de_caracteres_aleatoires
+spring.mail.username=votre.adresse@gmail.com
+spring.mail.password=le_mot_de_passe_d_application_gmail
+administrateur.email=email_du_premier_administrateur
+administrateur.mot-de-passe=son_mot_de_passe
 ```
 
 | Ligne | À quoi elle sert |
 |---|---|
 | `spring.datasource.password` | Le mot de passe que l'application utilise pour se connecter à **votre** PostgreSQL |
 | `JWT_SECRET` | La clé qui permet au serveur de signer les jetons de connexion |
+| `spring.mail.username` et `spring.mail.password` | Le compte Gmail qui envoie les emails d'invitation au personnel |
+| `administrateur.email` et `administrateur.mot-de-passe` | Le premier administrateur, créé au démarrage s'il n'en existe aucun |
 
 Pour obtenir une valeur pour `JWT_SECRET`, lancez cette commande et copiez le résultat :
 
@@ -103,7 +109,13 @@ Pour obtenir une valeur pour `JWT_SECRET`, lancez cette commande et copiez le r�
 openssl rand -hex 64
 ```
 
-**L'application ne démarre pas si l'une de ces deux lignes manque.**
+Pour `spring.mail.password`, n'utilisez pas votre mot de passe Gmail habituel, mais un **mot de passe d'application** :
+
+1. Sur [myaccount.google.com](https://myaccount.google.com), activez la validation en deux étapes.
+2. Dans la barre de recherche du compte, tapez « Mots de passe des applications ».
+3. Créez-en un, puis copiez le code de 16 lettres, sans les espaces.
+
+**L'application ne démarre pas si `spring.datasource.password` ou `JWT_SECRET` manque.** Sans les lignes `administrateur`, elle démarre, mais aucun administrateur n'est créé.
 
 ## 2. Lancer le projet
 
@@ -136,6 +148,8 @@ Avec Postman, par exemple, l'application démarrée.
 | `POST /auth/inscription` | Publique | Crée un compte patient. Répond `201 Created` |
 | `POST /auth/connexion` | Publique | Vérifie l'email et le mot de passe, puis renvoie un jeton |
 | `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe |
+| `POST /personnel` | Administrateur | Crée un médecin, une secrétaire ou un pharmacien, puis lui envoie un lien d'activation. Répond `201 Created` |
+| `POST /auth/activation` | Publique | Active un compte avec le jeton du lien et le mot de passe choisi. Répond `204 No Content` |
 
 **1. S'inscrire :** `POST http://localhost:8081/auth/inscription`, avec ce corps en JSON (*Body → raw → JSON*) :
 
@@ -166,6 +180,41 @@ Tous les champs sont obligatoires. Le mot de passe doit contenir entre 8 et 72 c
 La réponse contient le jeton. Copiez-le.
 
 **3. Voir son profil :** `GET http://localhost:8081/utilisateurs/moi`, sans corps. Dans l'onglet *Authorization*, choisissez *Bearer Token* et collez le jeton. Sans jeton, la réponse est `401`.
+
+#### Créer un membre du personnel
+
+Le personnel ne s'inscrit pas lui-même : c'est l'administrateur qui crée son compte. L'administrateur ne choisit pas le mot de passe. La personne reçoit un email et choisit elle-même son mot de passe, que personne d'autre ne connaît.
+
+**1. Se connecter en administrateur :** `POST /auth/connexion` avec l'email et le mot de passe `administrateur` de votre `.env`. Copiez le jeton.
+
+**2. Créer le compte :** `POST http://localhost:8081/personnel`, avec le jeton de l'administrateur (*Bearer Token*) :
+
+```json
+{
+  "nom": "Fall",
+  "prenom": "Moussa",
+  "email": "une.adresse@dont-vous-lisez-les-emails.sn",
+  "role": "MEDECIN",
+  "specialite": "Cardiologie",
+  "numeroOrdre": "SN-12345"
+}
+```
+
+- `role` vaut `MEDECIN`, `SECRETAIRE` ou `PHARMACIEN`.
+- `specialite` et `numeroOrdre` ne sont obligatoires que pour un médecin.
+
+Le compte est créé **inactif** : il ne peut pas encore se connecter. Un email est envoyé à l'adresse indiquée. Regardez aussi dans les spams.
+
+**3. Activer le compte :** le lien de l'email mène à une page qui n'existe pas encore. Copiez la fin du lien, tout ce qui suit `jeton=`. Puis envoyez `POST http://localhost:8081/auth/activation`, **sans jeton** (*No Auth*) :
+
+```json
+{
+  "jeton": "la_fin_du_lien",
+  "motDePasse": "secret123"
+}
+```
+
+La réponse `204` n'a pas de corps : c'est normal. Le lien est valable 48 heures et ne sert qu'une seule fois. La personne peut maintenant se connecter avec son email et ce mot de passe.
 
 ## 3. Travailler avec Git
 
@@ -238,6 +287,10 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 | Réponse `401` | Il faut être connecté pour accéder à cette route, ou le jeton a expiré | Inscrivez-vous si besoin, connectez-vous, puis envoyez le jeton (voir « Essayer l'API ») |
 | Réponse `400` avec le code `DONNEES_INVALIDES` | Un champ manque ou est mal rempli | La liste `erreurs` de la réponse indique quel champ corriger |
 | Réponse `409` avec le code `EMAIL_DEJA_UTILISE` | Un compte existe déjà avec cet email | Connectez-vous, ou choisissez un autre email |
+| Réponse `403` | Vous êtes connecté, mais votre rôle n'a pas le droit d'utiliser cette route | Connectez-vous avec le bon compte, par exemple l'administrateur pour `POST /personnel` |
+| Réponse `400` avec le code `JETON_INVALIDE` | Le lien d'activation est faux, a expiré ou a déjà servi | Vérifiez que vous avez copié toute la fin du lien. Il n'est pas encore possible de renvoyer une invitation (voir section 5) |
+| `cannot find symbol` sur `MEDECIN`, ou `incompatible types` avec `Role` | VS Code a importé une autre classe `Role` : `javax.management.relation.Role` | Remplacez l'import par `com.forceN.gestionpatient.utilisateur.enums.Role` |
+| `'url' attribute is not specified` après un redémarrage automatique | Un `clean` a vidé le dossier `target` pendant que l'application tournait | Arrêtez l'application, puis relancez-la. Ne lancez pas `clean` pendant qu'elle tourne |
 
 ## 5. Où en est le projet
 
@@ -248,10 +301,13 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 - La sécurité : connexion, jetons et routes fermées par défaut
 - L'inscription d'un patient : données vérifiées, mot de passe chiffré, email unique
 - La consultation de son profil
+- La création du personnel par l'administrateur, avec une invitation par email
+- La création du premier administrateur au démarrage
 
 **Ce qui manque :**
 
-- [ ] **Créer le personnel.** L'administrateur doit pouvoir créer les comptes des médecins, secrétaires et pharmaciens. Il reste aussi à choisir comment créer le premier administrateur.
+- [ ] **Renvoyer une invitation.** Si le lien d'activation a expiré, il n'existe pas encore de route pour en envoyer un nouveau.
+- [ ] **Changer son mot de passe**, une fois connecté.
 - [ ] **Corriger le contenu des DTO.** Beaucoup contiennent encore des entités.
 - [ ] **Écrire les fonctionnalités :** les contrôleurs, les services et les repositories de chaque domaine.
 - [ ] **Décider des droits de chaque rôle :** ce que chacun peut voir et faire.

@@ -183,7 +183,15 @@ public class StockInsuffisantException extends ApplicationException {
 
 Un **jeton JWT** est comme un badge signé par le serveur. Il est valable 60 minutes. Ensuite, il faut se reconnecter.
 
-**Toutes les routes sont fermées par défaut.** Seules deux routes sont publiques, car le visiteur n'a pas encore de jeton : `POST /auth/inscription` et `POST /auth/connexion`. Pour en rendre une autre publique, il faut l'ajouter dans `SecurityConfig`. Ne le faites qu'après en avoir parlé au groupe.
+**Toutes les routes sont fermées par défaut.** Seules trois routes sont publiques, car la personne n'a pas encore de jeton de connexion :
+
+| Route | Pourquoi elle est publique |
+|---|---|
+| `POST /auth/inscription` | Le patient n'a pas encore de compte |
+| `POST /auth/connexion` | C'est elle qui donne le jeton |
+| `POST /auth/activation` | Le personnel n'a pas encore de mot de passe. C'est le jeton reçu par email, valable 48 heures et une seule fois, qui prouve son identité |
+
+Pour rendre une autre route publique, il faut l'ajouter dans `SecurityConfig`. Expliquez pourquoi dans la description de la PR, pour que le groupe puisse la valider avant la fusion.
 
 ### Les trois niveaux de protection
 
