@@ -2,6 +2,7 @@ package com.forceN.gestionpatient.utilisateur.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,5 +30,14 @@ public class PersonnelController {
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
     public UtilisateurDto creer(@Valid @RequestBody PersonnelCreationDto dto) {
         return personnelService.creer(dto);
+    }
+
+    // Réservé à l'admin. Pour une personne qui n'a pas activé son compte à temps.
+    // 204 : l'email est parti, il n'y a rien à renvoyer.
+    @PostMapping("/{id}/invitation")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    public void renvoyerInvitation(@PathVariable Integer id) {
+        personnelService.renvoyerInvitation(id);
     }
 }

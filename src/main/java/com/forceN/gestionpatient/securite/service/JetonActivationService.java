@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,14 +37,18 @@ public class JetonActivationService {
 
     private final PasswordEncoder passwordEncoder;
 
-   
-
     /**
      * Crée un jeton pour cet utilisateur, enregistre son empreinte
      * et renvoie le jeton en clair (à mettre dans le lien de l'email).
      */
     @Transactional
     public String creerJeton(Utilisateur utilisateur) {
+        // 0. Désactiver les anciens liens : un seul lien valide à la fois.
+        List<JetonActivation> anciensJetons = jetonActivationRepository.findByUtilisateurAndUtiliseFalse(utilisateur);
+
+        for (JetonActivation ancien : anciensJetons) {
+            ancien.setUtilise(true);
+        }
         // 1. Fabrique un jeton aléatoire, en clair.
         String jeton = genererJeton();
 
@@ -61,7 +66,7 @@ public class JetonActivationService {
 
     }
 
-        /**
+    /**
      * Active le compte lié au jeton avec le mot de passe choisi par la personne.
      * Refuse un jeton inconnu, expiré ou déjà utilisé, toujours avec la même erreur.
      */
@@ -87,7 +92,6 @@ public class JetonActivationService {
         // 4. Le lien ne doit plus resservir
         jetonActivation.setUtilise(true);
     }
-
 
     /** 32 octets aléatoires écrits en texte utilisable dans une URL. */
     private String genererJeton() {
