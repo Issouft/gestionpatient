@@ -150,6 +150,7 @@ Avec Postman, par exemple, l'application démarrée.
 | `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe |
 | `POST /personnel` | Administrateur | Crée un médecin, une secrétaire ou un pharmacien, puis lui envoie un lien d'activation. Répond `201 Created` |
 | `POST /auth/activation` | Publique | Active un compte avec le jeton du lien et le mot de passe choisi. Répond `204 No Content` |
+| `POST /personnel/{id}/invitation` | Administrateur | Envoie un nouveau lien d'activation à une personne qui n'a pas encore activé son compte. L'ancien lien ne marche plus. Répond `204 No Content` |
 
 **1. S'inscrire :** `POST http://localhost:8081/auth/inscription`, avec ce corps en JSON (*Body → raw → JSON*) :
 
@@ -203,9 +204,9 @@ Le personnel ne s'inscrit pas lui-même : c'est l'administrateur qui crée son c
 - `role` vaut `MEDECIN`, `SECRETAIRE` ou `PHARMACIEN`.
 - `specialite` et `numeroOrdre` ne sont obligatoires que pour un médecin.
 
-Le compte est créé **inactif** : il ne peut pas encore se connecter. Un email est envoyé à l'adresse indiquée. Regardez aussi dans les spams.
+Le compte est créé **inactif** : il ne peut pas encore se connecter. Un email est envoyé à l'adresse indiquée. Regardez aussi dans les spams. Notez l'`id` de la réponse : il sert à renvoyer l'invitation (étape 4).
 
-**3. Activer le compte :** le lien de l'email mène à une page qui n'existe pas encore. Copiez la fin du lien, tout ce qui suit `jeton=`. Puis envoyez `POST http://localhost:8081/auth/activation`, **sans jeton** (*No Auth*) :
+**3. Activer le compte :** le lien de l'email mène à une page qui n'existe pas encore. Faites un clic droit sur le lien, puis *Copier l'adresse du lien*, et gardez tout ce qui suit `jeton=`. Ne recopiez pas le jeton à la main : des caractères comme `I`, `l` et `1` se confondent facilement. Puis envoyez `POST http://localhost:8081/auth/activation`, **sans jeton** (*No Auth*) :
 
 ```json
 {
@@ -215,6 +216,12 @@ Le compte est créé **inactif** : il ne peut pas encore se connecter. Un email 
 ```
 
 La réponse `204` n'a pas de corps : c'est normal. Le lien est valable 48 heures et ne sert qu'une seule fois. La personne peut maintenant se connecter avec son email et ce mot de passe.
+
+**4. Renvoyer l'invitation (si besoin) :** si le lien a expiré ou si l'email a été perdu, l'administrateur envoie `POST http://localhost:8081/personnel/51/invitation`, avec son jeton (*Bearer Token*) et **sans corps** (*Body → none*). Remplacez `51` par l'`id` de la personne.
+
+- `204` : un nouvel email est parti. **Seul le dernier lien marche** : les anciens sont désactivés, pour qu'il n'y ait jamais deux liens valides en même temps.
+- `409` avec le code `COMPTE_DEJA_ACTIF` : la personne a déjà activé son compte, aucun email n'est envoyé.
+- `404` avec le code `UTILISATEUR_INTROUVABLE` : aucun compte ne porte cet `id`.
 
 ## 3. Travailler avec Git
 
@@ -288,7 +295,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 | Réponse `400` avec le code `DONNEES_INVALIDES` | Un champ manque ou est mal rempli | La liste `erreurs` de la réponse indique quel champ corriger |
 | Réponse `409` avec le code `EMAIL_DEJA_UTILISE` | Un compte existe déjà avec cet email | Connectez-vous, ou choisissez un autre email |
 | Réponse `403` | Vous êtes connecté, mais votre rôle n'a pas le droit d'utiliser cette route | Connectez-vous avec le bon compte, par exemple l'administrateur pour `POST /personnel` |
-| Réponse `400` avec le code `JETON_INVALIDE` | Le lien d'activation est faux, a expiré ou a déjà servi | Vérifiez que vous avez copié toute la fin du lien. Il n'est pas encore possible de renvoyer une invitation (voir section 5) |
+| Réponse `400` avec le code `JETON_INVALIDE` | Le lien d'activation est faux, a expiré ou a déjà servi | Copiez le lien du **dernier** email reçu, avec un clic droit plutôt qu'à la main. S'il a expiré, l'administrateur peut renvoyer l'invitation (voir « Créer un membre du personnel », étape 4) |
 | `cannot find symbol` sur `MEDECIN`, ou `incompatible types` avec `Role` | VS Code a importé une autre classe `Role` : `javax.management.relation.Role` | Remplacez l'import par `com.forceN.gestionpatient.utilisateur.enums.Role` |
 | `'url' attribute is not specified` après un redémarrage automatique | Un `clean` a vidé le dossier `target` pendant que l'application tournait | Arrêtez l'application, puis relancez-la. Ne lancez pas `clean` pendant qu'elle tourne |
 
@@ -302,11 +309,11 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 - L'inscription d'un patient : données vérifiées, mot de passe chiffré, email unique
 - La consultation de son profil
 - La création du personnel par l'administrateur, avec une invitation par email
+- Le renvoi d'une invitation, avec un seul lien valide à la fois
 - La création du premier administrateur au démarrage
 
 **Ce qui manque :**
 
-- [ ] **Renvoyer une invitation.** Si le lien d'activation a expiré, il n'existe pas encore de route pour en envoyer un nouveau.
 - [ ] **Changer son mot de passe**, une fois connecté.
 - [ ] **Corriger le contenu des DTO.** Beaucoup contiennent encore des entités.
 - [ ] **Écrire les fonctionnalités :** les contrôleurs, les services et les repositories de chaque domaine.
