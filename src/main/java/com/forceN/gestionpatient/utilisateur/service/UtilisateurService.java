@@ -31,7 +31,7 @@ public class UtilisateurService {
     }
 
     /** Recopie les champs communs dans le DTO de réponse, sans le mot de passe. */
-    private UtilisateurDto convertiUtilisateurDto(Utilisateur utilisateur) {
+    public UtilisateurDto convertiUtilisateurDto(Utilisateur utilisateur) {
         UtilisateurDto dto = new UtilisateurDto();
 
         dto.setId(utilisateur.getId());

@@ -38,12 +38,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(routes -> routes
                         .requestMatchers(HttpMethod.POST, "/auth/inscription").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/connexion").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/activation").permitAll()
+
                         .anyRequest().authenticated())
                 .exceptionHandling(erreurs -> erreurs
                         .authenticationEntryPoint(securiteErreurHandler)
                         .accessDeniedHandler(securiteErreurHandler))
                 // Créé ici et non comme @Component, pour que le filtre ne s'exécute que dans cette chaîne.
-                .addFilterBefore(new JwtFiltre(jwtService, userDetailsService), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtFiltre(jwtService, userDetailsService),
+                        UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
