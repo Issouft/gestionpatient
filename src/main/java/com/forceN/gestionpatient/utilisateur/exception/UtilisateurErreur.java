@@ -13,7 +13,9 @@ public enum UtilisateurErreur implements CodeErreur {
     UTILISATEUR_INTROUVABLE(HttpStatus.NOT_FOUND, "Utilisateur introuvable"),
     // Cette route ne crée que du personnel : ni patient (il s'inscrit seul), ni administrateur.
     ROLE_NON_AUTORISE(HttpStatus.BAD_REQUEST, "Ce rôle ne peut pas être créé ici"),
-    INFORMATIONS_MEDECIN_MANQUANTES(HttpStatus.BAD_REQUEST, "La spécialité et le numéro d'ordre sont obligatoires pour un médecin")
+    INFORMATIONS_MEDECIN_MANQUANTES(HttpStatus.BAD_REQUEST, "La spécialité et le numéro d'ordre sont obligatoires pour un médecin"),
+    // On n'envoie pas de nouveau lien à un compte qui fonctionne déjà.
+    COMPTE_DEJA_ACTIF(HttpStatus.CONFLICT, "Ce compte est déjà activé")
     ;
 
     private final HttpStatus statut;

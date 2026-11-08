@@ -32,12 +32,12 @@ public class PersonnelService {
     private final EmailService emailService;
     private final UtilisateurService utilisateurService;
 
-        /**
+    /**
      * Crée un compte inactif pour un membre du personnel et lui envoie le lien d'activation.
      * Il choisira lui-même son mot de passe : l'administrateur ne le connaît jamais.
      */
     // Tout ou rien : si l'email ne part pas, le compte et le jeton sont annulés.
-    @Transactional 
+    @Transactional
     public UtilisateurDto creer(PersonnelCreationDto dto) {
         // 1. Email normalisé + refus s'il est déjà pris
         String email = dto.getEmail().trim().toLowerCase(Locale.ROOT);
@@ -67,6 +67,26 @@ public class PersonnelService {
         return utilisateurService.convertiUtilisateurDto(enregistre);
     }
 
+    /**
+     * Renvoie un lien d'activation à un membre du personnel qui n'a pas encore activé son compte.
+     * L'ancien lien ne marche plus : un seul lien valide à la fois.
+     */
+    @Transactional
+    public void renvoyerInvitation(Integer id) {
+        // 1. Retrouver le compte, sinon 404
+        Utilisateur utilisateur = utilisateurRepository.findById(id)
+                .orElseThrow(() -> new ApplicationException(UtilisateurErreur.UTILISATEUR_INTROUVABLE,
+                        "Aucun compte ne porte cet identifiant"));
+
+        // 2. Refuser si le compte est déjà actif (409)
+        if (utilisateur.isActif()) {
+            throw new ApplicationException(UtilisateurErreur.COMPTE_DEJA_ACTIF, "La personne peut déjà se connecter");
+        }
+
+        // 3. Nouveau jeton + email
+        String jeton = jetonActivationService.creerJeton(utilisateur);
+        emailService.envoyerInvitation(utilisateur.getEmail(), utilisateur.getPrenom(), jeton);
+    }
 
     /** Crée l'objet qui correspond au rôle demandé. Refuse PATIENT et ADMINISTRATEUR. */
     private Utilisateur creerSelonRole(PersonnelCreationDto dto) {
