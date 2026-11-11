@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.forceN.gestionpatient.utilisateur.dto.ChangementMotDePasseDto;
+import com.forceN.gestionpatient.utilisateur.dto.ModificationProfilDto;
 import com.forceN.gestionpatient.utilisateur.dto.UtilisateurDto;
 import com.forceN.gestionpatient.utilisateur.service.UtilisateurService;
 
@@ -28,6 +29,13 @@ public class UtilisateurController {
     @GetMapping("/moi")
     public UtilisateurDto consulterProfil(@AuthenticationPrincipal UserDetails connecte) {
         return utilisateurService.consulterProfil(connecte.getUsername());
+    }
+
+    // Renvoie le profil à jour (200). L'email vient du jeton : on ne modifie que son propre profil.
+    @PutMapping("/moi")
+    public UtilisateurDto modifierProfil(@AuthenticationPrincipal UserDetails connecte,
+            @Valid @RequestBody ModificationProfilDto dto) {
+        return utilisateurService.modifierProfil(connecte.getUsername(), dto);
     }
 
     // 204 : réussi, rien à renvoyer. L'email vient du jeton : on ne peut changer que son propre mot de passe.

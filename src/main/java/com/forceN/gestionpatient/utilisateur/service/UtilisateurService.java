@@ -6,7 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.forceN.gestionpatient.commun.exception.ApplicationException;
 import com.forceN.gestionpatient.utilisateur.dto.ChangementMotDePasseDto;
+import com.forceN.gestionpatient.utilisateur.dto.ModificationProfilDto;
 import com.forceN.gestionpatient.utilisateur.dto.UtilisateurDto;
+import com.forceN.gestionpatient.utilisateur.entities.Patient;
 import com.forceN.gestionpatient.utilisateur.entities.Utilisateur;
 import com.forceN.gestionpatient.utilisateur.exception.UtilisateurErreur;
 import com.forceN.gestionpatient.utilisateur.repository.UtilisateurRepository;
@@ -51,6 +53,32 @@ public class UtilisateurService {
 
         utilisateur.setPassword(passwordEncoder.encode(dto.getNouveauMotDePasse()));
         // Pas de save() : dans une transaction, Hibernate enregistre seul les changements de l'entité.
+    }
+
+    /**
+     * Modifie le profil de l'utilisateur connecté et renvoie le profil à jour.
+     * Le téléphone et l'adresse n'existent que pour le patient : pour les autres rôles, ils sont ignorés.
+     */
+    @Transactional
+    public UtilisateurDto modifierProfil(String email, ModificationProfilDto dto) {
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
+        .orElseThrow(() -> new ApplicationException(UtilisateurErreur.UTILISATEUR_INTROUVABLE, "Ce compte n'existe plus. Reconnectez-vous."));
+
+        utilisateur.setNom(dto.getNom().trim());
+        utilisateur.setPrenom(dto.getPrenom().trim());
+
+        // instanceof vérifie le type réel du compte et le convertit en Patient d'un coup.
+        if (utilisateur instanceof Patient patient) {
+            // null = champ absent du corps : on garde l'ancienne valeur.
+            if (dto.getTelephone() != null) {
+                patient.setTelephone(dto.getTelephone().trim());
+            }
+            if (dto.getAdresse() != null) {
+                patient.setAdresse(dto.getAdresse().trim());
+            }
+        }
+        // Pas de save() : Hibernate enregistre les changements à la fin de la transaction.
+        return convertiUtilisateurDto(utilisateur);
     }
 
     /** Recopie les champs communs dans le DTO de réponse, sans le mot de passe. */
