@@ -28,7 +28,7 @@ com.forceN.gestionpatient
 │   ├── jwt        : JwtService, JwtFiltre
 │   ├── controller : AuthController
 │   ├── service    : AuthService, UtilisateurConnecteService
-│   ├── dto        : ConnexionRequete, ConnexionReponse, ActivationRequete, MotDePasseOublieRequete
+│   ├── dto        : ConnexionRequete, ConnexionReponse, ChoixMotDePasseRequete, MotDePasseOublieRequete
 │   └── exception  : SecuriteErreur, SecuriteErreurHandler
 │
 ├── utilisateur                     ← Partie 1

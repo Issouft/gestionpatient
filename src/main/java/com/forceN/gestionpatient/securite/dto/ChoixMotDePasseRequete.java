@@ -7,13 +7,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Données envoyées pour activer un compte (POST /auth/activation) :
- * le jeton reçu dans le lien de l'email et le mot de passe choisi.
+ * Données envoyées pour choisir son mot de passe grâce à un lien reçu par email :
+ * activation d'un compte (POST /auth/activation) ou mot de passe oublié (POST /auth/reinitialisation).
+ * Contient le jeton du lien et le mot de passe choisi.
  */
 @Getter
 @Setter
 @NoArgsConstructor
-public class ActivationRequete {
+public class ChoixMotDePasseRequete {
 
     @NotBlank(message = "Le jeton est obligatoire")
     private String jeton;
