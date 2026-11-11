@@ -376,7 +376,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 
 ## 5. Où en est le projet
 
-**Ce qui fonctionne :**
+**Ce qui fonctionne :** la Partie 1 (comptes et sécurité) est terminée.
 
 - L'organisation du code par domaine
 - Des DTO sans entités : ils contiennent des identifiants ou d'autres DTO
@@ -393,6 +393,8 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 
 **Ce qui manque :**
 
-- [ ] **Écrire les fonctionnalités :** les contrôleurs, les services et les repositories de chaque domaine.
+- [ ] **Partie 2 (`rendezvous`) :** écrire les contrôleurs, les services et les repositories.
+- [ ] **Partie 3 (`medical`) :** écrire les contrôleurs, les services et les repositories.
 - [ ] **Décider des droits de chaque rôle :** ce que chacun peut voir et faire.
+- [ ] **Décider comment créer le compte d'un patient sans email** ou qui ne maîtrise pas le numérique : qui le crée, avec quel identifiant.
 - [ ] **Choisir les responsables de chaque partie.** Voir [ARCHITECTURE.md](ARCHITECTURE.md), section 4.
