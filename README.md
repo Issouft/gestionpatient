@@ -148,6 +148,7 @@ Avec Postman, par exemple, l'application démarrée.
 | `POST /auth/inscription` | Publique | Crée un compte patient. Répond `201 Created` |
 | `POST /auth/connexion` | Publique | Vérifie l'email et le mot de passe, puis renvoie un jeton |
 | `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe |
+| `PUT /utilisateurs/moi/mot-de-passe` | Avec jeton | Change le mot de passe de la personne connectée, après vérification de l'ancien. Répond `204 No Content` |
 | `POST /personnel` | Administrateur | Crée un médecin, une secrétaire ou un pharmacien, puis lui envoie un lien d'activation. Répond `201 Created` |
 | `POST /auth/activation` | Publique | Active un compte avec le jeton du lien et le mot de passe choisi. Répond `204 No Content` |
 | `POST /personnel/{id}/invitation` | Administrateur | Envoie un nouveau lien d'activation à une personne qui n'a pas encore activé son compte. L'ancien lien ne marche plus. Répond `204 No Content` |
@@ -181,6 +182,17 @@ Tous les champs sont obligatoires. Le mot de passe doit contenir entre 8 et 72 c
 La réponse contient le jeton. Copiez-le.
 
 **3. Voir son profil :** `GET http://localhost:8081/utilisateurs/moi`, sans corps. Dans l'onglet *Authorization*, choisissez *Bearer Token* et collez le jeton. Sans jeton, la réponse est `401`.
+
+**4. Changer son mot de passe :** `PUT http://localhost:8081/utilisateurs/moi/mot-de-passe`, avec le jeton (*Bearer Token*) et ce corps en JSON :
+
+```json
+{
+  "ancienMotDePasse": "secret123",
+  "nouveauMotDePasse": "nouveau456"
+}
+```
+
+La réponse est `204`, sans contenu. Le nouveau mot de passe suit les mêmes règles qu'à l'inscription. Le jeton actuel reste valable : pas besoin de se reconnecter.
 
 #### Créer un membre du personnel
 
@@ -295,6 +307,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 | Réponse `400` avec le code `DONNEES_INVALIDES` | Un champ manque ou est mal rempli | La liste `erreurs` de la réponse indique quel champ corriger |
 | Réponse `409` avec le code `EMAIL_DEJA_UTILISE` | Un compte existe déjà avec cet email | Connectez-vous, ou choisissez un autre email |
 | Réponse `403` | Vous êtes connecté, mais votre rôle n'a pas le droit d'utiliser cette route | Connectez-vous avec le bon compte, par exemple l'administrateur pour `POST /personnel` |
+| Réponse `400` avec le code `MOT_DE_PASSE_INCORRECT` | L'ancien mot de passe envoyé pour en changer est faux | Vérifiez l'ancien mot de passe. Ce n'est pas un `401` : la session est toujours valable |
 | Réponse `400` avec le code `JETON_INVALIDE` | Le lien d'activation est faux, a expiré ou a déjà servi | Copiez le lien du **dernier** email reçu, avec un clic droit plutôt qu'à la main. S'il a expiré, l'administrateur peut renvoyer l'invitation (voir « Créer un membre du personnel », étape 4) |
 | `cannot find symbol` sur `MEDECIN`, ou `incompatible types` avec `Role` | VS Code a importé une autre classe `Role` : `javax.management.relation.Role` | Remplacez l'import par `com.forceN.gestionpatient.utilisateur.enums.Role` |
 | `'url' attribute is not specified` après un redémarrage automatique | Un `clean` a vidé le dossier `target` pendant que l'application tournait | Arrêtez l'application, puis relancez-la. Ne lancez pas `clean` pendant qu'elle tourne |
@@ -308,13 +321,13 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 - La sécurité : connexion, jetons et routes fermées par défaut
 - L'inscription d'un patient : données vérifiées, mot de passe chiffré, email unique
 - La consultation de son profil
+- Le changement de son mot de passe, une fois connecté
 - La création du personnel par l'administrateur, avec une invitation par email
 - Le renvoi d'une invitation, avec un seul lien valide à la fois
 - La création du premier administrateur au démarrage
 
 **Ce qui manque :**
 
-- [ ] **Changer son mot de passe**, une fois connecté.
 - [ ] **Corriger le contenu des DTO.** Beaucoup contiennent encore des entités.
 - [ ] **Écrire les fonctionnalités :** les contrôleurs, les services et les repositories de chaque domaine.
 - [ ] **Décider des droits de chaque rôle :** ce que chacun peut voir et faire.
