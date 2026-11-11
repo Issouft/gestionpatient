@@ -148,6 +148,7 @@ Avec Postman, par exemple, l'application démarrée.
 | `POST /auth/inscription` | Publique | Crée un compte patient. Répond `201 Created` |
 | `POST /auth/connexion` | Publique | Vérifie l'email et le mot de passe, puis renvoie un jeton |
 | `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe |
+| `PUT /utilisateurs/moi` | Avec jeton | Modifie le nom et le prénom ; pour un patient, aussi le téléphone et l'adresse. Renvoie le profil à jour |
 | `PUT /utilisateurs/moi/mot-de-passe` | Avec jeton | Change le mot de passe de la personne connectée, après vérification de l'ancien. Répond `204 No Content` |
 | `POST /auth/mot-de-passe-oublie` | Publique | Envoie par email un lien valable 1 h pour choisir un nouveau mot de passe. Répond toujours `204 No Content`, même si l'email n'a pas de compte |
 | `POST /auth/reinitialisation` | Publique | Change le mot de passe avec le jeton du lien. Répond `204 No Content` |
@@ -184,6 +185,19 @@ Tous les champs sont obligatoires. Le mot de passe doit contenir entre 8 et 72 c
 La réponse contient le jeton. Copiez-le.
 
 **3. Voir son profil :** `GET http://localhost:8081/utilisateurs/moi`, sans corps. Dans l'onglet *Authorization*, choisissez *Bearer Token* et collez le jeton. Sans jeton, la réponse est `401`.
+
+**Modifier son profil :** `PUT http://localhost:8081/utilisateurs/moi`, avec le jeton (*Bearer Token*) et ce corps en JSON :
+
+```json
+{
+  "nom": "Diop",
+  "prenom": "Awa",
+  "telephone": "781234567",
+  "adresse": "Thiès"
+}
+```
+
+Le nom et le prénom sont obligatoires. Le téléphone et l'adresse ne concernent que le patient : s'ils sont absents, ils ne changent pas. L'email, le rôle et le mot de passe ne se changent pas ici, même s'ils sont envoyés.
 
 **4. Changer son mot de passe :** `PUT http://localhost:8081/utilisateurs/moi/mot-de-passe`, avec le jeton (*Bearer Token*) et ce corps en JSON :
 
@@ -343,7 +357,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 - La gestion commune des erreurs
 - La sécurité : connexion, jetons et routes fermées par défaut
 - L'inscription d'un patient : données vérifiées, mot de passe chiffré, email unique
-- La consultation de son profil
+- La consultation et la modification de son profil
 - Le changement de son mot de passe, une fois connecté
 - Le mot de passe oublié, avec un lien par email valable 1 heure
 - La création du personnel par l'administrateur, avec une invitation par email
