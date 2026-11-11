@@ -32,8 +32,7 @@ public class UtilisateurService {
     // Lecture seule : rien n'est modifié, Hibernate n'a pas à surveiller les changements.
     @Transactional(readOnly = true)
     public UtilisateurDto consulterProfil(String email) {
-        Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
-        .orElseThrow(() -> new ApplicationException(UtilisateurErreur.UTILISATEUR_INTROUVABLE, "Ce compte n'existe plus. Reconnectez-vous."));
+        Utilisateur utilisateur = trouverCompteConnecte(email);
 
         return convertiUtilisateurDto(utilisateur);
     }
@@ -44,9 +43,7 @@ public class UtilisateurService {
      */
     @Transactional
     public void changerMotDePasse(String email, ChangementMotDePasseDto dto) {
-        Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
-                .orElseThrow(() -> new ApplicationException(UtilisateurErreur.UTILISATEUR_INTROUVABLE,
-                        "Ce compte n'existe plus. Reconnectez-vous."));
+        Utilisateur utilisateur = trouverCompteConnecte(email);
 
         // matches() hache le texte reçu et le compare au hachage enregistré.
         if (!passwordEncoder.matches(dto.getAncienMotDePasse(), utilisateur.getPassword())) {
@@ -54,7 +51,7 @@ public class UtilisateurService {
                     "Vérifiez votre ancien mot de passe.");
         }
 
-        utilisateur.setPassword(passwordEncoder.encode(dto.getNouveauMotDePasse()));
+        utilisateur.changerMotDePasse(passwordEncoder.encode(dto.getNouveauMotDePasse()));
         // Pas de save() : dans une transaction, Hibernate enregistre seul les changements de l'entité.
     }
 
@@ -64,8 +61,7 @@ public class UtilisateurService {
      */
     @Transactional
     public UtilisateurDto modifierProfil(String email, ModificationProfilDto dto) {
-        Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
-        .orElseThrow(() -> new ApplicationException(UtilisateurErreur.UTILISATEUR_INTROUVABLE, "Ce compte n'existe plus. Reconnectez-vous."));
+        Utilisateur utilisateur = trouverCompteConnecte(email);
 
         utilisateur.setNom(dto.getNom().trim());
         utilisateur.setPrenom(dto.getPrenom().trim());
@@ -82,6 +78,16 @@ public class UtilisateurService {
         }
         // Pas de save() : Hibernate enregistre les changements à la fin de la transaction.
         return convertiUtilisateurDto(utilisateur);
+    }
+
+    /**
+     * Retrouve le compte de la personne connectée (l'email vient du jeton).
+     * 404 si le compte a été supprimé après la création du jeton.
+     */
+    private Utilisateur trouverCompteConnecte(String email) {
+        return utilisateurRepository.findByEmail(email)
+                .orElseThrow(() -> new ApplicationException(UtilisateurErreur.UTILISATEUR_INTROUVABLE,
+                        "Ce compte n'existe plus. Reconnectez-vous."));
     }
 
     /**
