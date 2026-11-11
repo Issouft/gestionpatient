@@ -100,7 +100,7 @@ administrateur.mot-de-passe=son_mot_de_passe
 |---|---|
 | `spring.datasource.password` | Le mot de passe que l'application utilise pour se connecter à **votre** PostgreSQL |
 | `JWT_SECRET` | La clé qui permet au serveur de signer les jetons de connexion |
-| `spring.mail.username` et `spring.mail.password` | Le compte Gmail qui envoie les emails d'invitation au personnel |
+| `spring.mail.username` et `spring.mail.password` | Le compte Gmail qui envoie les emails : invitation du personnel et mot de passe oublié |
 | `administrateur.email` et `administrateur.mot-de-passe` | Le premier administrateur, créé au démarrage s'il n'en existe aucun |
 
 Pour obtenir une valeur pour `JWT_SECRET`, lancez cette commande et copiez le résultat :
@@ -149,6 +149,8 @@ Avec Postman, par exemple, l'application démarrée.
 | `POST /auth/connexion` | Publique | Vérifie l'email et le mot de passe, puis renvoie un jeton |
 | `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe |
 | `PUT /utilisateurs/moi/mot-de-passe` | Avec jeton | Change le mot de passe de la personne connectée, après vérification de l'ancien. Répond `204 No Content` |
+| `POST /auth/mot-de-passe-oublie` | Publique | Envoie par email un lien valable 1 h pour choisir un nouveau mot de passe. Répond toujours `204 No Content`, même si l'email n'a pas de compte |
+| `POST /auth/reinitialisation` | Publique | Change le mot de passe avec le jeton du lien. Répond `204 No Content` |
 | `POST /personnel` | Administrateur | Crée un médecin, une secrétaire ou un pharmacien, puis lui envoie un lien d'activation. Répond `201 Created` |
 | `POST /auth/activation` | Publique | Active un compte avec le jeton du lien et le mot de passe choisi. Répond `204 No Content` |
 | `POST /personnel/{id}/invitation` | Administrateur | Envoie un nouveau lien d'activation à une personne qui n'a pas encore activé son compte. L'ancien lien ne marche plus. Répond `204 No Content` |
@@ -193,6 +195,27 @@ La réponse contient le jeton. Copiez-le.
 ```
 
 La réponse est `204`, sans contenu. Le nouveau mot de passe suit les mêmes règles qu'à l'inscription. Le jeton actuel reste valable : pas besoin de se reconnecter.
+
+**5. Mot de passe oublié :** `POST http://localhost:8081/auth/mot-de-passe-oublie`, sans jeton, avec ce corps :
+
+```json
+{
+  "email": "awa@exemple.sn"
+}
+```
+
+La réponse est toujours `204`, que l'email ait un compte ou non : on ne révèle pas quels comptes existent. Si le compte existe et qu'il est actif, un email part avec un lien valable **1 heure**. Le lien se termine par `?jeton=...` : copiez ce jeton, avec un clic droit.
+
+Puis `POST http://localhost:8081/auth/reinitialisation`, sans jeton de connexion, avec ce corps :
+
+```json
+{
+  "jeton": "le-jeton-copié-depuis-le-lien",
+  "motDePasse": "nouveau789"
+}
+```
+
+La réponse est `204`. Le lien ne marche qu'une fois, et seul le dernier lien demandé est valable. Un compte inactif ne reçoit pas de lien : un membre du personnel qui n'a pas encore activé son compte doit utiliser son invitation.
 
 #### Créer un membre du personnel
 
@@ -308,7 +331,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 | Réponse `409` avec le code `EMAIL_DEJA_UTILISE` | Un compte existe déjà avec cet email | Connectez-vous, ou choisissez un autre email |
 | Réponse `403` | Vous êtes connecté, mais votre rôle n'a pas le droit d'utiliser cette route | Connectez-vous avec le bon compte, par exemple l'administrateur pour `POST /personnel` |
 | Réponse `400` avec le code `MOT_DE_PASSE_INCORRECT` | L'ancien mot de passe envoyé pour en changer est faux | Vérifiez l'ancien mot de passe. Ce n'est pas un `401` : la session est toujours valable |
-| Réponse `400` avec le code `JETON_INVALIDE` | Le lien d'activation est faux, a expiré ou a déjà servi | Copiez le lien du **dernier** email reçu, avec un clic droit plutôt qu'à la main. S'il a expiré, l'administrateur peut renvoyer l'invitation (voir « Créer un membre du personnel », étape 4) |
+| Réponse `400` avec le code `JETON_INVALIDE` | Le lien reçu par email (invitation ou mot de passe oublié) est faux, a expiré ou a déjà servi | Copiez le lien du **dernier** email reçu, avec un clic droit plutôt qu'à la main. S'il a expiré : pour une invitation, l'administrateur peut la renvoyer (voir « Créer un membre du personnel », étape 4) ; pour un mot de passe oublié, refaites la demande |
 | `cannot find symbol` sur `MEDECIN`, ou `incompatible types` avec `Role` | VS Code a importé une autre classe `Role` : `javax.management.relation.Role` | Remplacez l'import par `com.forceN.gestionpatient.utilisateur.enums.Role` |
 | `'url' attribute is not specified` après un redémarrage automatique | Un `clean` a vidé le dossier `target` pendant que l'application tournait | Arrêtez l'application, puis relancez-la. Ne lancez pas `clean` pendant qu'elle tourne |
 
@@ -322,6 +345,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 - L'inscription d'un patient : données vérifiées, mot de passe chiffré, email unique
 - La consultation de son profil
 - Le changement de son mot de passe, une fois connecté
+- Le mot de passe oublié, avec un lien par email valable 1 heure
 - La création du personnel par l'administrateur, avec une invitation par email
 - Le renvoi d'une invitation, avec un seul lien valide à la fois
 - La création du premier administrateur au démarrage
