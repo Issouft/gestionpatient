@@ -147,7 +147,7 @@ Avec Postman, par exemple, l'application démarrée.
 |---|---|---|
 | `POST /auth/inscription` | Publique | Crée un compte patient. Répond `201 Created` |
 | `POST /auth/connexion` | Publique | Vérifie l'email et le mot de passe, puis renvoie un jeton |
-| `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe |
+| `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe. Un patient y voit aussi sa date de naissance, son âge, son téléphone et son adresse ; un médecin, sa spécialité et son numéro d'ordre |
 | `PUT /utilisateurs/moi` | Avec jeton | Modifie le nom et le prénom ; pour un patient, aussi le téléphone et l'adresse. Renvoie le profil à jour |
 | `PUT /utilisateurs/moi/mot-de-passe` | Avec jeton | Change le mot de passe de la personne connectée, après vérification de l'ancien. Répond `204 No Content` |
 | `POST /auth/mot-de-passe-oublie` | Publique | Envoie par email un lien valable 1 h pour choisir un nouveau mot de passe. Répond toujours `204 No Content`, même si l'email n'a pas de compte |
@@ -366,6 +366,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 **Ce qui fonctionne :**
 
 - L'organisation du code par domaine
+- Des DTO sans entités : ils contiennent des identifiants ou d'autres DTO
 - La gestion commune des erreurs
 - La sécurité : connexion, jetons et routes fermées par défaut
 - L'inscription d'un patient : données vérifiées, mot de passe chiffré, email unique
@@ -379,7 +380,6 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 
 **Ce qui manque :**
 
-- [ ] **Corriger le contenu des DTO.** Beaucoup contiennent encore des entités.
 - [ ] **Écrire les fonctionnalités :** les contrôleurs, les services et les repositories de chaque domaine.
 - [ ] **Décider des droits de chaque rôle :** ce que chacun peut voir et faire.
 - [ ] **Choisir les responsables de chaque partie.** Voir [ARCHITECTURE.md](ARCHITECTURE.md), section 4.
