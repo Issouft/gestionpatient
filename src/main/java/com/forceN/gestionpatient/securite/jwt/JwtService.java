@@ -1,5 +1,6 @@
 package com.forceN.gestionpatient.securite.jwt;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -35,11 +36,14 @@ public class JwtService {
                 .compact();
     }
 
-    /** Renvoie l'email contenu dans le jeton, ou rien si le jeton est faux ou expiré. */
-    public Optional<String> extraireEmail(String jeton) {
+    /** Renvoie l'email et la date de création du jeton, ou rien si le jeton est faux ou expiré. */
+    public Optional<JetonLu> lire(String jeton) {
         try {
-            return Optional.ofNullable(Jwts.parser().verifyWith(cle).build()
-                    .parseSignedClaims(jeton).getPayload().getSubject());
+            Claims contenu = Jwts.parser().verifyWith(cle).build().parseSignedClaims(jeton).getPayload();
+            if (contenu.getSubject() == null || contenu.getIssuedAt() == null) {
+                return Optional.empty();
+            }
+            return Optional.of(new JetonLu(contenu.getSubject(), contenu.getIssuedAt().toInstant()));
         } catch (JwtException | IllegalArgumentException exception) {
             return Optional.empty();
         }

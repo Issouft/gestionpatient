@@ -3,6 +3,7 @@ package com.forceN.gestionpatient.securite.config;
 import com.forceN.gestionpatient.securite.exception.SecuriteErreurHandler;
 import com.forceN.gestionpatient.securite.jwt.JwtFiltre;
 import com.forceN.gestionpatient.securite.jwt.JwtService;
+import com.forceN.gestionpatient.securite.service.UtilisateurConnecteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,7 +14,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -25,7 +25,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
+    private final UtilisateurConnecteService utilisateurConnecteService;
     private final SecuriteErreurHandler securiteErreurHandler;
 
     @Bean
@@ -39,13 +39,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/inscription").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/connexion").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/activation").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/mot-de-passe-oublie").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/reinitialisation").permitAll()
 
                         .anyRequest().authenticated())
                 .exceptionHandling(erreurs -> erreurs
                         .authenticationEntryPoint(securiteErreurHandler)
                         .accessDeniedHandler(securiteErreurHandler))
                 // Créé ici et non comme @Component, pour que le filtre ne s'exécute que dans cette chaîne.
-                .addFilterBefore(new JwtFiltre(jwtService, userDetailsService),
+                .addFilterBefore(new JwtFiltre(jwtService, utilisateurConnecteService),
                         UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

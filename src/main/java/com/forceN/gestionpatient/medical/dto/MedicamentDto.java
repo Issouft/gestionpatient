@@ -1,6 +1,5 @@
 package com.forceN.gestionpatient.medical.dto;
 
-import com.forceN.gestionpatient.utilisateur.entities.Pharmacien;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,7 +12,8 @@ public class MedicamentDto {
     private String dosage;
     private int stock;
     private int seuilAlerte;
-    private Pharmacien pharmacien;
+    // Identifiants et DTO seulement : un DTO ne contient jamais d'entité (voir ARCHITECTURE.md).
+    private Integer pharmacienId;
 
     public boolean estDisponible() {
         return stock > 0;

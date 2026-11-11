@@ -5,11 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.MailException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -50,6 +52,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({ AccessDeniedException.class, AuthenticationException.class })
     public void relancerErreurDeSecurite(Exception exception) throws Exception {
         throw exception;
+    }
+
+    // La base refuse une valeur unique déjà prise (email, numéro d'ordre...). Arrive quand deux requêtes
+    // identiques arrivent en même temps : les deux passent la vérification du service, la base refuse la seconde.
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail gererConflitEnBase(DataIntegrityViolationException exception) {
+        log.warn("Contrainte de la base refusée : {}", exception.getMostSpecificCause().getMessage());
+        return creerReponse(HttpStatus.CONFLICT, "Donnée déjà utilisée",
+                "Une des informations envoyées est déjà utilisée. Vérifiez-les, puis réessayez.", "DONNEE_DEJA_UTILISEE");
+    }
+
+    // Le serveur d'emails ne répond pas ou refuse l'envoi. 503 : le problème est temporaire et ne vient pas du client.
+    // Avec @Transactional, ce qui a été fait avant l'envoi (compte, jeton) est annulé.
+    @ExceptionHandler(MailException.class)
+    public ProblemDetail gererEchecEmail(MailException exception) {
+        log.error("Échec de l'envoi d'un email", exception);
+        return creerReponse(HttpStatus.SERVICE_UNAVAILABLE, "Envoi de l'email impossible",
+                "L'email n'a pas pu être envoyé. Réessayez dans quelques minutes.", "ENVOI_EMAIL_IMPOSSIBLE");
     }
 
     // Le détail reste dans les logs : il ne doit jamais être envoyé au client.

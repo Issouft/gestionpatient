@@ -1,7 +1,10 @@
 package com.forceN.gestionpatient.utilisateur.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,5 +42,21 @@ public class PersonnelController {
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
     public void renvoyerInvitation(@PathVariable Integer id) {
         personnelService.renvoyerInvitation(id);
+    }
+
+    // Réservé à l'admin. Tout le personnel, actif ou non : le champ "actif" de chaque compte le précise.
+    @GetMapping
+    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    public List<UtilisateurDto> lister() {
+        return personnelService.lister();
+    }
+
+    // Réservé à l'admin. La personne ne peut plus se connecter. 204, même si le compte était déjà inactif.
+    // Pour réactiver : renvoyer l'invitation (route ci-dessus).
+    @PostMapping("/{id}/desactivation")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    public void desactiver(@PathVariable Integer id) {
+        personnelService.desactiver(id);
     }
 }
