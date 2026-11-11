@@ -147,6 +147,8 @@ Les tests vérifient automatiquement que le code fonctionne. PostgreSQL doit êt
 
 Si tout va bien, vous verrez `BUILD SUCCESS`. Une longue trace d'erreur peut s'afficher pendant les tests : c'est normal, car l'un d'eux simule volontairement une panne.
 
+Les tests ne modifient pas votre base : chacun est annulé à la fin. Ils n'envoient pas non plus d'emails : l'envoi est remplacé par un faux pendant les tests.
+
 ### Essayer l'API
 
 Avec Postman, par exemple, l'application démarrée.
@@ -218,7 +220,7 @@ Le nom et le prénom sont obligatoires. Le téléphone et l'adresse ne concernen
 }
 ```
 
-La réponse est `204`, sans contenu. Le nouveau mot de passe suit les mêmes règles qu'à l'inscription. Le jeton actuel reste valable : pas besoin de se reconnecter.
+La réponse est `204`, sans contenu. Le nouveau mot de passe suit les mêmes règles qu'à l'inscription. **Toutes les sessions sont fermées**, y compris celle en cours : les jetons créés avant le changement sont refusés (`401`). Reconnectez-vous avec le nouveau mot de passe. Ainsi, quelqu'un qui aurait volé une session la perd aussitôt.
 
 **5. Mot de passe oublié :** `POST http://localhost:8081/auth/mot-de-passe-oublie`, sans jeton, avec ce corps :
 
@@ -239,7 +241,7 @@ Puis `POST http://localhost:8081/auth/reinitialisation`, sans jeton de connexion
 }
 ```
 
-La réponse est `204`. Le lien ne marche qu'une fois, et seul le dernier lien demandé est valable. Un compte inactif ne reçoit pas de lien : un membre du personnel qui n'a pas encore activé son compte doit utiliser son invitation.
+La réponse est `204`. Le lien ne marche qu'une fois, et seul le dernier lien demandé est valable. Comme pour un changement de mot de passe, les sessions ouvertes avant sont fermées. Un compte inactif ne reçoit pas de lien : un membre du personnel qui n'a pas encore activé son compte doit utiliser son invitation.
 
 #### Créer un membre du personnel
 

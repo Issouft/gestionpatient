@@ -1,5 +1,6 @@
 package com.forceN.gestionpatient.securite.jwt;
 
+import com.forceN.gestionpatient.securite.service.UtilisateurConnecteService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,8 +10,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -25,28 +24,25 @@ public class JwtFiltre extends OncePerRequestFilter {
     private static final String PREFIXE = "Bearer ";
 
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
+    private final UtilisateurConnecteService utilisateurConnecteService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         String entete = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (entete != null && entete.startsWith(PREFIXE)) {
-            jwtService.extraireEmail(entete.substring(PREFIXE.length())).ifPresent(this::authentifier);
+            jwtService.lire(entete.substring(PREFIXE.length())).ifPresent(this::authentifier);
         }
         chain.doFilter(request, response);
     }
 
-    // L'utilisateur est relu en base : un compte désactivé perd son accès sans attendre la fin du jeton.
-    private void authentifier(String email) {
-        try {
-            UserDetails utilisateur = userDetailsService.loadUserByUsername(email);
-            if (utilisateur.isEnabled()) {
-                SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
-                        utilisateur, null, utilisateur.getAuthorities()));
-            }
-        } catch (UsernameNotFoundException exception) {
-            SecurityContextHolder.clearContext();
-        }
+    // L'utilisateur est relu en base à chaque requête : un compte désactivé, ou dont le mot de passe
+    // a changé après la création du jeton, perd son accès sans attendre la fin du jeton.
+    private void authentifier(JetonLu jeton) {
+        utilisateurConnecteService.chargerPourJeton(jeton.email(), jeton.emisLe())
+                .filter(UserDetails::isEnabled)
+                .ifPresent(utilisateur -> SecurityContextHolder.getContext().setAuthentication(
+                        UsernamePasswordAuthenticationToken.authenticated(
+                                utilisateur, null, utilisateur.getAuthorities())));
     }
 }

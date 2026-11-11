@@ -108,7 +108,7 @@ public class JetonActivationService {
 
         // 2. Donner le mot de passe (haché) et activer le compte
         Utilisateur utilisateur = jetonActivation.getUtilisateur();
-        utilisateur.setPassword(passwordEncoder.encode(motDePasse));
+        utilisateur.changerMotDePasse(passwordEncoder.encode(motDePasse));
         utilisateur.setActif(true);
 
         // 3. Le lien ne doit plus resservir
@@ -146,7 +146,7 @@ public class JetonActivationService {
         if (!utilisateur.isActif()) {
             throw new ApplicationException(SecuriteErreur.JETON_INVALIDE, conseil);
         }
-        utilisateur.setPassword(passwordEncoder.encode(motDePasse));
+        utilisateur.changerMotDePasse(passwordEncoder.encode(motDePasse));
         jetonActivation.setUtilise(true);
     }
 
