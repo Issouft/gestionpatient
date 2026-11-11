@@ -12,9 +12,8 @@ public enum SecuriteErreur implements CodeErreur {
     NON_AUTHENTIFIE(HttpStatus.UNAUTHORIZED, "Authentification requise"),
     ACCES_REFUSE(HttpStatus.FORBIDDEN, "Accès refusé"),
     // Un seul message pour jeton inconnu, expiré ou déjà utilisé : on ne dit pas à un attaquant lequel.
-    JETON_INVALIDE(HttpStatus.BAD_REQUEST, "Lien d'activation invalide ou expiré");
-    ;
-
+    // Sert aux deux liens envoyés par email : invitation et mot de passe oublié.
+    JETON_INVALIDE(HttpStatus.BAD_REQUEST, "Lien invalide ou expiré");
 
     private final HttpStatus statut;
     private final String titre;

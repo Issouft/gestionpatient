@@ -3,6 +3,7 @@ package com.forceN.gestionpatient.securite.controller;
 import com.forceN.gestionpatient.securite.dto.ActivationRequete;
 import com.forceN.gestionpatient.securite.dto.ConnexionReponse;
 import com.forceN.gestionpatient.securite.dto.ConnexionRequete;
+import com.forceN.gestionpatient.securite.dto.MotDePasseOublieRequete;
 import com.forceN.gestionpatient.securite.service.AuthService;
 import com.forceN.gestionpatient.securite.service.JetonActivationService;
 import com.forceN.gestionpatient.utilisateur.dto.PatientDto;
@@ -46,6 +47,21 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void activer(@Valid @RequestBody ActivationRequete requete) {
         jetonActivationService.activer(requete.getJeton(), requete.getMotDePasse());
+    }
+
+    // Publique, et toujours 204 : la réponse ne révèle pas si l'email a un compte.
+    @PostMapping("/mot-de-passe-oublie")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void motDePasseOublie(@Valid @RequestBody MotDePasseOublieRequete requete) {
+        jetonActivationService.demanderReinitialisation(requete.getEmail());
+    }
+
+    // Publique : la personne a oublié son mot de passe, c'est le jeton de l'email qui prouve son identité.
+    // Même corps que l'activation (jeton + mot de passe), d'où la réutilisation d'ActivationRequete.
+    @PostMapping("/reinitialisation")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reinitialiser(@Valid @RequestBody ActivationRequete requete) {
+        jetonActivationService.reinitialiser(requete.getJeton(), requete.getMotDePasse());
     }
 
 }

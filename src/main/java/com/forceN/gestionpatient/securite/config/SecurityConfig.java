@@ -39,6 +39,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/inscription").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/connexion").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/activation").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/mot-de-passe-oublie").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/reinitialisation").permitAll()
 
                         .anyRequest().authenticated())
                 .exceptionHandling(erreurs -> erreurs
