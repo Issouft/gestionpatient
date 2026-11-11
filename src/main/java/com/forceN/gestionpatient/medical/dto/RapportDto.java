@@ -1,6 +1,5 @@
 package com.forceN.gestionpatient.medical.dto;
 
-import com.forceN.gestionpatient.utilisateur.entities.Administrateur;
 import com.forceN.gestionpatient.medical.enums.TypeRapport;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,5 +23,6 @@ public class RapportDto {
 
     private String resume;
 
-    private Administrateur administrateur;
+    // Identifiants et DTO seulement : un DTO ne contient jamais d'entité (voir ARCHITECTURE.md).
+    private Integer administrateurId;
 }

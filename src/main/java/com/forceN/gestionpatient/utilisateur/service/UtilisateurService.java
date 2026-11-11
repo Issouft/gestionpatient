@@ -6,8 +6,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.forceN.gestionpatient.commun.exception.ApplicationException;
 import com.forceN.gestionpatient.utilisateur.dto.ChangementMotDePasseDto;
+import com.forceN.gestionpatient.utilisateur.dto.MedecinDto;
 import com.forceN.gestionpatient.utilisateur.dto.ModificationProfilDto;
+import com.forceN.gestionpatient.utilisateur.dto.PatientDto;
 import com.forceN.gestionpatient.utilisateur.dto.UtilisateurDto;
+import com.forceN.gestionpatient.utilisateur.entities.Medecin;
 import com.forceN.gestionpatient.utilisateur.entities.Patient;
 import com.forceN.gestionpatient.utilisateur.entities.Utilisateur;
 import com.forceN.gestionpatient.utilisateur.exception.UtilisateurErreur;
@@ -81,10 +84,36 @@ public class UtilisateurService {
         return convertiUtilisateurDto(utilisateur);
     }
 
-    /** Recopie les champs communs dans le DTO de réponse, sans le mot de passe. */
+    /**
+     * Transforme un compte en DTO de réponse, sans le mot de passe.
+     * Un patient devient un PatientDto, un médecin un MedecinDto : leurs champs propres sont inclus.
+     * Les autres rôles n'ont que les champs communs.
+     */
     public UtilisateurDto convertiUtilisateurDto(Utilisateur utilisateur) {
-        UtilisateurDto dto = new UtilisateurDto();
+        if (utilisateur instanceof Patient patient) {
+            return convertiPatientDto(patient);
+        }
+        if (utilisateur instanceof Medecin medecin) {
+            MedecinDto dto = new MedecinDto();
+            dto.setSpecialite(medecin.getSpecialite());
+            dto.setNumeroOrdre(medecin.getNumeroOrdre());
+            return remplirChampsCommuns(dto, medecin);
+        }
+        return remplirChampsCommuns(new UtilisateurDto(), utilisateur);
+    }
 
+    /** Patient avec ses champs propres (date de naissance, sexe, téléphone, adresse ; l'âge est calculé). */
+    public PatientDto convertiPatientDto(Patient patient) {
+        PatientDto dto = new PatientDto();
+        dto.setDateNaissance(patient.getDateNaissance());
+        dto.setSexe(patient.getSexe());
+        dto.setTelephone(patient.getTelephone());
+        dto.setAdresse(patient.getAdresse());
+        return remplirChampsCommuns(dto, patient);
+    }
+
+    /** Recopie les champs communs à tous les rôles. <T> : renvoie le même type de DTO que celui reçu. */
+    private <T extends UtilisateurDto> T remplirChampsCommuns(T dto, Utilisateur utilisateur) {
         dto.setId(utilisateur.getId());
         dto.setNom(utilisateur.getNom());
         dto.setPrenom(utilisateur.getPrenom());

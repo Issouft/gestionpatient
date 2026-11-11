@@ -1,8 +1,5 @@
 package com.forceN.gestionpatient.medical.dto;
 
-import com.forceN.gestionpatient.medical.entities.Medicament;
-import com.forceN.gestionpatient.utilisateur.entities.Patient;
-import com.forceN.gestionpatient.utilisateur.entities.Pharmacien;
 import com.forceN.gestionpatient.medical.enums.StatutDemande;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,11 +19,12 @@ public class DemandeDisponibiliteDto {
 
     private String reponse;
 
-    private Patient patient;
+    // Identifiants et DTO seulement : un DTO ne contient jamais d'entité (voir ARCHITECTURE.md).
+    private Integer patientId;
 
-    private Medicament medicament;
+    private Integer medicamentId;
 
-    private Pharmacien pharmacien;
+    private Integer pharmacienId;
 
     /*
     public void valider(String reponse) {

@@ -1,7 +1,5 @@
 package com.forceN.gestionpatient.medical.dto;
 
-import com.forceN.gestionpatient.medical.entities.Medicament;
-import com.forceN.gestionpatient.medical.entities.Ordonnance;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,7 +13,8 @@ public class LigneOrdonnanceDto {
 
     private int dureeJours;
 
-    private Ordonnance ordonnance;
+    // Identifiants et DTO seulement : un DTO ne contient jamais d'entité (voir ARCHITECTURE.md).
+    private Integer ordonnanceId;
 
-    private Medicament medicament;
+    private Integer medicamentId;
 }

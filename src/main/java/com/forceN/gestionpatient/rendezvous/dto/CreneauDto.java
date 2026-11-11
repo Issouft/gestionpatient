@@ -1,6 +1,5 @@
 package com.forceN.gestionpatient.rendezvous.dto;
 
-import com.forceN.gestionpatient.rendezvous.entities.Planning;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,5 +20,6 @@ public class CreneauDto {
 
     private boolean disponible = true;
 
-    private Planning planning;
+    // Identifiants et DTO seulement : un DTO ne contient jamais d'entité (voir ARCHITECTURE.md).
+    private Integer planningId;
 }

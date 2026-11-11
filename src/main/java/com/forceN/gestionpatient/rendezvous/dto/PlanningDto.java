@@ -3,8 +3,6 @@ package com.forceN.gestionpatient.rendezvous.dto;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.forceN.gestionpatient.rendezvous.entities.Creneau;
-import com.forceN.gestionpatient.utilisateur.entities.Medecin;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,17 +13,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PlanningDto {
 
-    private Medecin medecin;
+    // Identifiants et DTO seulement : un DTO ne contient jamais d'entité (voir ARCHITECTURE.md).
+    private Integer medecinId;
 
-    private List<Creneau> creneaux = new ArrayList<>();
-
-    public void ajouterCreneau(Creneau creneau) {
-        creneaux.add(creneau);
-        creneau.setPlanning(null);
-    }
-
-    public void supprimerCreneau(Creneau creneau) {
-        creneaux.remove(creneau);
-        creneau.setPlanning(null);
-    }
+    // ajouterCreneau / supprimerCreneau retirés : ils modifiaient des entités, ce travail revient au service.
+    private List<CreneauDto> creneaux = new ArrayList<>();
 }
