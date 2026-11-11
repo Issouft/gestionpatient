@@ -21,6 +21,7 @@ import com.forceN.gestionpatient.utilisateur.entities.Secretaire;
 import com.forceN.gestionpatient.utilisateur.entities.Utilisateur;
 import com.forceN.gestionpatient.utilisateur.enums.Role;
 import com.forceN.gestionpatient.utilisateur.exception.UtilisateurErreur;
+import com.forceN.gestionpatient.utilisateur.repository.MedecinRepository;
 import com.forceN.gestionpatient.utilisateur.repository.UtilisateurRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class PersonnelService {
     private static final Set<Role> ROLES_PERSONNEL = EnumSet.of(Role.MEDECIN, Role.SECRETAIRE, Role.PHARMACIEN);
 
     private final UtilisateurRepository utilisateurRepository;
+    private final MedecinRepository medecinRepository;
     private final PasswordEncoder passwordEncoder;
     private final JetonActivationService jetonActivationService;
     private final EmailService emailService;
@@ -144,9 +146,15 @@ public class PersonnelService {
                     "Renseignez la spécialité et le numéro d'ordre");
         }
 
+        String numeroOrdre = dto.getNumeroOrdre().trim();
+        if (medecinRepository.existsByNumeroOrdre(numeroOrdre)) {
+            throw new ApplicationException(UtilisateurErreur.NUMERO_ORDRE_DEJA_UTILISE,
+                    "Un autre médecin a déjà ce numéro d'ordre");
+        }
+
         Medecin medecin = new Medecin();
-        medecin.setSpecialite(dto.getSpecialite());
-        medecin.setNumeroOrdre(dto.getNumeroOrdre());
+        medecin.setSpecialite(dto.getSpecialite().trim());
+        medecin.setNumeroOrdre(numeroOrdre);
         return medecin;
     }
 }

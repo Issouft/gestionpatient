@@ -11,6 +11,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 
+import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,11 +24,13 @@ import com.forceN.gestionpatient.utilisateur.entities.Utilisateur;
 import com.forceN.gestionpatient.utilisateur.repository.UtilisateurRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Crée et vérifie les jetons envoyés par email : invitation du personnel (48 h)
  * et réinitialisation du mot de passe oublié (1 h).
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class JetonActivationService {
@@ -123,7 +126,12 @@ public class JetonActivationService {
                 .filter(Utilisateur::isActif)
                 .ifPresent(utilisateur -> {
                     String jeton = creerJeton(utilisateur, DUREE_REINITIALISATION);
-                    emailService.envoyerReinitialisation(utilisateur.getEmail(), utilisateur.getPrenom(), jeton);
+                    try {
+                        emailService.envoyerReinitialisation(utilisateur.getEmail(), utilisateur.getPrenom(), jeton);
+                    } catch (MailException exception) {
+                        // Pas de 503 ici : il révélerait que ce compte existe. On garde 204 et on trace l'erreur.
+                        log.error("Échec de l'envoi de l'email de réinitialisation", exception);
+                    }
                 });
     }
 
