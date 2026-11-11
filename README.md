@@ -154,7 +154,9 @@ Avec Postman, par exemple, l'application démarrée.
 | `POST /auth/reinitialisation` | Publique | Change le mot de passe avec le jeton du lien. Répond `204 No Content` |
 | `POST /personnel` | Administrateur | Crée un médecin, une secrétaire ou un pharmacien, puis lui envoie un lien d'activation. Répond `201 Created` |
 | `POST /auth/activation` | Publique | Active un compte avec le jeton du lien et le mot de passe choisi. Répond `204 No Content` |
-| `POST /personnel/{id}/invitation` | Administrateur | Envoie un nouveau lien d'activation à une personne qui n'a pas encore activé son compte. L'ancien lien ne marche plus. Répond `204 No Content` |
+| `POST /personnel/{id}/invitation` | Administrateur | Envoie un nouveau lien d'activation à une personne qui n'a pas encore activé son compte, ou dont le compte a été désactivé. L'ancien lien ne marche plus. Répond `204 No Content` |
+| `GET /personnel` | Administrateur | Liste les médecins, secrétaires et pharmaciens, actifs ou non, triés par nom |
+| `POST /personnel/{id}/desactivation` | Administrateur | Désactive le compte d'un membre du personnel : il ne peut plus se connecter, et son jeton actuel est refusé tout de suite. Répond `204 No Content` |
 
 **1. S'inscrire :** `POST http://localhost:8081/auth/inscription`, avec ce corps en JSON (*Body → raw → JSON*) :
 
@@ -272,6 +274,16 @@ La réponse `204` n'a pas de corps : c'est normal. Le lien est valable 48 heures
 - `409` avec le code `COMPTE_DEJA_ACTIF` : la personne a déjà activé son compte, aucun email n'est envoyé.
 - `404` avec le code `UTILISATEUR_INTROUVABLE` : aucun compte ne porte cet `id`.
 
+**5. Lister le personnel :** `GET http://localhost:8081/personnel`, avec le jeton de l'administrateur. Le champ `actif` de chaque compte indique s'il peut se connecter.
+
+**6. Désactiver un compte :** `POST http://localhost:8081/personnel/51/desactivation`, avec le jeton de l'administrateur et **sans corps**. Réponse `204`, même si le compte était déjà inactif.
+
+- La personne ne peut plus se connecter, et le jeton qu'elle utilisait est refusé (`401`) dès sa requête suivante.
+- Les liens qu'elle avait reçus (invitation, mot de passe oublié) ne marchent plus, et « mot de passe oublié » ne lui envoie rien.
+- `404` si l'`id` n'est pas celui d'un médecin, d'une secrétaire ou d'un pharmacien : un patient ou un administrateur ne se désactive pas ici.
+
+**Réactiver un compte :** renvoyez l'invitation (étape 4). La personne choisit un nouveau mot de passe avec le lien, et son compte redevient actif.
+
 ## 3. Travailler avec Git
 
 ### Récupérer la dernière version du projet
@@ -362,6 +374,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 - Le mot de passe oublié, avec un lien par email valable 1 heure
 - La création du personnel par l'administrateur, avec une invitation par email
 - Le renvoi d'une invitation, avec un seul lien valide à la fois
+- La liste du personnel et la désactivation d'un compte par l'administrateur
 - La création du premier administrateur au démarrage
 
 **Ce qui manque :**
