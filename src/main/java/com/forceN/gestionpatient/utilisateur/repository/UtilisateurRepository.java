@@ -3,6 +3,8 @@ package com.forceN.gestionpatient.utilisateur.repository;
 import com.forceN.gestionpatient.utilisateur.entities.Utilisateur;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import com.forceN.gestionpatient.utilisateur.enums.Role;
@@ -16,5 +18,8 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Intege
 
     // Sert au démarrage : existe-t-il déjà un compte avec ce rôle ?
     boolean existsByRole(Role role);
+
+    // Tous les comptes dont le rôle est dans la liste, triés par nom puis prénom.
+    List<Utilisateur> findByRoleInOrderByNomAscPrenomAsc(Collection<Role> roles);
 
 }

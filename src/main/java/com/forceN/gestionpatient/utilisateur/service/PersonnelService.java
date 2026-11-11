@@ -1,6 +1,9 @@
 package com.forceN.gestionpatient.utilisateur.service;
 
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,15 +19,19 @@ import com.forceN.gestionpatient.utilisateur.entities.Medecin;
 import com.forceN.gestionpatient.utilisateur.entities.Pharmacien;
 import com.forceN.gestionpatient.utilisateur.entities.Secretaire;
 import com.forceN.gestionpatient.utilisateur.entities.Utilisateur;
+import com.forceN.gestionpatient.utilisateur.enums.Role;
 import com.forceN.gestionpatient.utilisateur.exception.UtilisateurErreur;
 import com.forceN.gestionpatient.utilisateur.repository.UtilisateurRepository;
 
 import lombok.RequiredArgsConstructor;
 
-/** Création du personnel (médecin, secrétaire, pharmacien) par l'administrateur. */
+/** Gestion du personnel (médecin, secrétaire, pharmacien) par l'administrateur : création, invitation, liste, désactivation. */
 @Service
 @RequiredArgsConstructor
 public class PersonnelService {
+
+    // Les rôles que l'administrateur gère ici. Ni patient (il s'inscrit seul), ni administrateur.
+    private static final Set<Role> ROLES_PERSONNEL = EnumSet.of(Role.MEDECIN, Role.SECRETAIRE, Role.PHARMACIEN);
 
     private final UtilisateurRepository utilisateurRepository;
     private final PasswordEncoder passwordEncoder;
@@ -86,6 +93,35 @@ public class PersonnelService {
         // 3. Nouveau jeton + email
         String jeton = jetonActivationService.creerJeton(utilisateur);
         emailService.envoyerInvitation(utilisateur.getEmail(), utilisateur.getPrenom(), jeton);
+    }
+
+    /** Liste le personnel (médecins, secrétaires, pharmaciens), actif ou non, trié par nom. */
+    @Transactional(readOnly = true)
+    public List<UtilisateurDto> lister() {
+        return utilisateurRepository.findByRoleInOrderByNomAscPrenomAsc(ROLES_PERSONNEL).stream()
+                .map(utilisateurService::convertiUtilisateurDto)
+                .toList();
+    }
+
+    /**
+     * Désactive le compte d'un membre du personnel : il ne peut plus se connecter,
+     * et son jeton de connexion actuel est refusé dès la requête suivante (voir JwtFiltre).
+     * Pour le réactiver, l'administrateur lui renvoie une invitation : la personne choisit un nouveau mot de passe.
+     */
+    @Transactional
+    public void desactiver(Integer id) {
+        Utilisateur utilisateur = trouverPersonnel(id);
+        utilisateur.setActif(false);
+        // Un lien encore valable (invitation ou mot de passe oublié) ne doit pas pouvoir le réactiver.
+        jetonActivationService.annulerJetons(utilisateur);
+    }
+
+    /** Retrouve un membre du personnel. 404 aussi pour un patient ou un administrateur : ils ne sont pas gérés ici. */
+    private Utilisateur trouverPersonnel(Integer id) {
+        return utilisateurRepository.findById(id)
+                .filter(utilisateur -> ROLES_PERSONNEL.contains(utilisateur.getRole()))
+                .orElseThrow(() -> new ApplicationException(UtilisateurErreur.UTILISATEUR_INTROUVABLE,
+                        "Aucun membre du personnel ne porte cet identifiant"));
     }
 
     /** Crée l'objet qui correspond au rôle demandé. Refuse PATIENT et ADMINISTRATEUR. */

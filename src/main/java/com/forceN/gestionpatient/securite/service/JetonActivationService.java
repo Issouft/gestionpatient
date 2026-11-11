@@ -61,11 +61,8 @@ public class JetonActivationService {
     @Transactional
     public String creerJeton(Utilisateur utilisateur, Duration duree) {
         // 0. Désactiver les anciens liens : un seul lien valide à la fois.
-        List<JetonActivation> anciensJetons = jetonActivationRepository.findByUtilisateurAndUtiliseFalse(utilisateur);
+        annulerJetons(utilisateur);
 
-        for (JetonActivation ancien : anciensJetons) {
-            ancien.setUtilise(true);
-        }
         // 1. Fabrique un jeton aléatoire, en clair.
         String jeton = genererJeton();
 
@@ -81,6 +78,19 @@ public class JetonActivationService {
         // 4. Renvoie le jeton en clair : c'est lui qui ira dans le lien de l'email.
         return jeton;
 
+    }
+
+    /**
+     * Rend inutilisables tous les liens encore valables de cet utilisateur.
+     * Sert avant un nouveau lien, et quand l'administrateur désactive un compte
+     * (sinon un lien d'invitation en attente pourrait le réactiver).
+     */
+    @Transactional
+    public void annulerJetons(Utilisateur utilisateur) {
+        List<JetonActivation> jetons = jetonActivationRepository.findByUtilisateurAndUtiliseFalse(utilisateur);
+        for (JetonActivation jeton : jetons) {
+            jeton.setUtilise(true);
+        }
     }
 
     /**
