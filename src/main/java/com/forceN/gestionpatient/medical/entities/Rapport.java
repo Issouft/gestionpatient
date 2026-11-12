@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -24,13 +25,13 @@ public class Rapport extends AbstractEntity {
     private TypeRapport type;
 
     @Column(name = "periode_debut")
-    private LocalDate periodeDebut;
+    private Instant periodeDebut;
 
     @Column(name = "periode_fin")
-    private LocalDate periodeFin;
+    private Instant periodeFin;
 
     @Column(name = "date_generation")
-    private LocalDateTime dateGeneration;
+    private Instant dateGeneration;
 
     // Attribut conservé de ton ancienne classe (absent du diagramme)
     @Column(name = "resume_rapport")

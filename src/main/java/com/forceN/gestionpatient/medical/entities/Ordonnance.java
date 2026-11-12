@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,7 @@ import java.util.List;
 public class Ordonnance extends AbstractEntity {
 
     @Column(name = "date_emission")
-    private LocalDate dateEmission;
+    private Instant dateEmission;
 
     // Consultation 1 — 0..1 Ordonnance ("génère")
     @OneToOne(optional = false, fetch = FetchType.LAZY)

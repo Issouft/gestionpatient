@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
@@ -21,7 +22,7 @@ import java.time.LocalDateTime;
 public class DemandeDisponibilite extends AbstractEntity {
 
     @Column(name = "date_demande")
-    private LocalDateTime dateDemande;
+    private Instant dateDemande;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

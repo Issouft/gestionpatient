@@ -1,28 +1,70 @@
-package com.forceN.gestionpatient.medical.dto;
+package com.forceN.gestionpatient.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.forceN.gestionpatient.medical.entities.Rapport;
 import com.forceN.gestionpatient.utilisateur.entities.Administrateur;
-import com.forceN.gestionpatient.medical.enums.TypeRapport;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
-public class RapportDto {
+public class AdministrateurDto {
 
-    private TypeRapport type;
+    private Integer id;
 
-    private LocalDate periodeDebut;
+    private String nom;
+    private String prenom;
+    private String email;
+    private String contact;
 
-    private LocalDate periodeFin;
+    // Écrit uniquement (création / modification), jamais renvoyé au front
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String motDePasse;
 
-    private LocalDateTime dateGeneration;
+    // Uniquement les ids des rapports, pour éviter la boucle infinie avec RapportDto
+    @Builder.Default
+    private List<Integer> rapportIds = new ArrayList<>();
 
-    private String resume;
+    public static AdministrateurDto fromEntity(Administrateur administrateur) {
+        if (administrateur == null) {
+            return null;
+        }
+        return AdministrateurDto.builder()
+                .id(administrateur.getId())
+                .nom(administrateur.getNom())
+                .prenom(administrateur.getPrenom())
+                .email(administrateur.getEmail())
+                .contact(administrateur.getContact())
+                .rapportIds(
+                        administrateur.getRapports() == null
+                                ? new ArrayList<>()
+                                : administrateur.getRapports().stream()
+                                .map(Rapport::getId)
+                                .toList()
+                )
+                .build();
+    }
 
-    private Administrateur administrateur;
+    public static Administrateur toEntity(AdministrateurDto dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        Administrateur administrateur = new Administrateur();
+        administrateur.setId(dto.getId());
+        administrateur.setNom(dto.getNom());
+        administrateur.setPrenom(dto.getPrenom());
+        administrateur.setEmail(dto.getEmail());
+        administrateur.setContact(dto.getContact());
+        // administrateur.setMotDePasse(dto.getMotDePasse());
+        // Les rapports ne sont pas reconstruits ici : la relation est portée
+        // par Rapport (qui référence l'administrateur).
+
+        return administrateur;
+    }
 }

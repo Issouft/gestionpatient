@@ -1,43 +1,65 @@
 package com.forceN.gestionpatient.medical.dto;
 
-import com.forceN.gestionpatient.medical.entities.Medicament;
-import com.forceN.gestionpatient.utilisateur.entities.Patient;
-import com.forceN.gestionpatient.utilisateur.entities.Pharmacien;
+import com.forceN.gestionpatient.medical.entities.DemandeDisponibilite;
 import com.forceN.gestionpatient.medical.enums.StatutDemande;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.forceN.gestionpatient.utilisateur.dto.PatientDto;
+import com.forceN.gestionpatient.utilisateur.dto.PharmacienDto;
+import lombok.*;
 
-
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class DemandeDisponibiliteDto {
 
-    private LocalDateTime dateDemande;
+    private Integer id;
 
+    private Instant dateDemande;
+
+    @Builder.Default
     private StatutDemande statut = StatutDemande.EN_ATTENTE;
 
     private String reponse;
 
-    private Patient patient;
+    private PatientDto patient;
 
-    private Medicament medicament;
+    private MedicamentDto medicament;
 
-    private Pharmacien pharmacien;
+    private PharmacienDto pharmacien;
 
-    /*
-    public void valider(String reponse) {
-        this.statut = StatutDemande.VALIDEE;
-        this.reponse = reponse;
+    public static DemandeDisponibiliteDto fromEntity(DemandeDisponibilite demande) {
+        if (demande == null) {
+            return null;
+        }
+        return DemandeDisponibiliteDto.builder()
+                .id(demande.getId())
+                .dateDemande(demande.getDateDemande())
+                .statut(demande.getStatut())
+                .reponse(demande.getReponse())
+                .patient(PatientDto.fromEntity(demande.getPatient()))
+                .medicament(MedicamentDto.fromEntity(demande.getMedicament()))
+                .pharmacien(PharmacienDto.fromEntity(demande.getPharmacien()))
+                .build();
     }
 
-    public void refuser(String reponse) {
-        this.statut = StatutDemande.REFUSEE;
-        this.reponse = reponse;
-    }
+    public static DemandeDisponibilite toEntity(DemandeDisponibiliteDto dto) {
+        if (dto == null) {
+            return null;
+        }
 
-     */
+        DemandeDisponibilite demande = new DemandeDisponibilite();
+        demande.setId(dto.getId());
+        demande.setDateDemande(dto.getDateDemande());
+        demande.setStatut(dto.getStatut());
+        demande.setReponse(dto.getReponse());
+        demande.setPatient(PatientDto.toEntity(dto.getPatient()));
+        demande.setMedicament(MedicamentDto.toEntity(dto.getMedicament()));
+        demande.setPharmacien(PharmacienDto.toEntity(dto.getPharmacien()));
+
+        return demande;
+    }
 }

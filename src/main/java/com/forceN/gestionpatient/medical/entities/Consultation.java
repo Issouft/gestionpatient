@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
@@ -19,7 +20,7 @@ import java.time.LocalDateTime;
 public class Consultation extends AbstractEntity {
 
     @Column(name = "date_consultation")
-    private LocalDateTime date;
+    private Instant date;
 
     private String observations;
     private String diagnostic;
