@@ -19,27 +19,27 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/utilisateurs")
+@RequestMapping("/utilisateurs/moi")
 @RequiredArgsConstructor
 public class UtilisateurController {
     private final UtilisateurService utilisateurService;
 
     // Route protégée : JwtFiltre a déjà identifié l'utilisateur grâce au jeton.
     // Son username est son email (voir UtilisateurConnecteService).
-    @GetMapping("/moi")
+    @GetMapping
     public UtilisateurDto consulterProfil(@AuthenticationPrincipal UserDetails connecte) {
         return utilisateurService.consulterProfil(connecte.getUsername());
     }
 
     // Renvoie le profil à jour (200). L'email vient du jeton : on ne modifie que son propre profil.
-    @PutMapping("/moi")
+    @PutMapping
     public UtilisateurDto modifierProfil(@AuthenticationPrincipal UserDetails connecte,
             @Valid @RequestBody ModificationProfilDto dto) {
         return utilisateurService.modifierProfil(connecte.getUsername(), dto);
     }
 
     // 204 : réussi, rien à renvoyer. L'email vient du jeton : on ne peut changer que son propre mot de passe.
-    @PutMapping("/moi/mot-de-passe")
+    @PutMapping("/mot-de-passe")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void changerMotDePasse(@AuthenticationPrincipal UserDetails connecte,
             @Valid @RequestBody ChangementMotDePasseDto dto) {

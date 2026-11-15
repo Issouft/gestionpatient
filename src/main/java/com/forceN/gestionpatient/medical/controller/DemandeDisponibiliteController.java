@@ -33,7 +33,7 @@ public class DemandeDisponibiliteController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PATIENT')")
+    @PreAuthorize("hasAuthority('DEMANDE_SOUMETTRE')")
     public DemandeDisponibiliteDto creer(@AuthenticationPrincipal UserDetails connecte,
             @Valid @RequestBody DemandeDisponibiliteDto dto) {
         return demandeService.creer(connecte.getUsername(), dto);
@@ -41,14 +41,14 @@ public class DemandeDisponibiliteController {
 
     // Le patient ne voit que ses propres demandes.
     @GetMapping("/moi")
-    @PreAuthorize("hasRole('PATIENT')")
+    @PreAuthorize("hasAuthority('DEMANDE_SOUMETTRE')")
     public List<DemandeDisponibiliteDto> mesDemandes(@AuthenticationPrincipal UserDetails connecte) {
         return demandeService.mesDemandes(connecte.getUsername());
     }
 
     // Exemple : GET /demandes?statut=EN_ATTENTE pour les demandes à traiter. Sans statut : toutes.
     @GetMapping
-    @PreAuthorize("hasRole('PHARMACIEN')")
+    @PreAuthorize("hasAuthority('DEMANDE_TRAITER')")
     public List<DemandeDisponibiliteDto> lister(@RequestParam(required = false) StatutDemande statut) {
         return demandeService.lister(statut);
     }
@@ -56,14 +56,14 @@ public class DemandeDisponibiliteController {
     // Corps facultatif : {"reponse": "..."}. Sans message, une réponse par défaut est enregistrée.
     // Pas de @Valid : il exigerait medicamentId, utile seulement à la création. Le service vérifie la réponse.
     @PostMapping("/{id}/validation")
-    @PreAuthorize("hasRole('PHARMACIEN')")
+    @PreAuthorize("hasAuthority('DEMANDE_TRAITER')")
     public DemandeDisponibiliteDto valider(@AuthenticationPrincipal UserDetails connecte, @PathVariable Integer id,
             @RequestBody(required = false) DemandeDisponibiliteDto dto) {
         return demandeService.valider(connecte.getUsername(), id, dto);
     }
 
     @PostMapping("/{id}/refus")
-    @PreAuthorize("hasRole('PHARMACIEN')")
+    @PreAuthorize("hasAuthority('DEMANDE_TRAITER')")
     public DemandeDisponibiliteDto refuser(@AuthenticationPrincipal UserDetails connecte, @PathVariable Integer id,
             @RequestBody(required = false) DemandeDisponibiliteDto dto) {
         return demandeService.refuser(connecte.getUsername(), id, dto);
@@ -71,7 +71,7 @@ public class DemandeDisponibiliteController {
 
     // Le patient a pris le produit : le stock baisse de la quantité demandée. Sans corps.
     @PostMapping("/{id}/retrait")
-    @PreAuthorize("hasRole('PHARMACIEN')")
+    @PreAuthorize("hasAuthority('DEMANDE_TRAITER')")
     public DemandeDisponibiliteDto confirmerRetrait(@PathVariable Integer id) {
         return demandeService.confirmerRetrait(id);
     }

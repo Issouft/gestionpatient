@@ -27,7 +27,7 @@ public class MedicamentController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PHARMACIEN')")
+    @PreAuthorize("hasAuthority('MEDICAMENT_GERER')")
     public MedicamentDto creer(@AuthenticationPrincipal UserDetails connecte,
             @Valid @RequestBody MedicamentDto dto) {
         return medicamentService.creer(connecte.getUsername(), dto);

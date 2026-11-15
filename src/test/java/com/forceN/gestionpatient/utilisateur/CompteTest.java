@@ -1,5 +1,7 @@
 package com.forceN.gestionpatient.utilisateur;
 
+import com.forceN.gestionpatient.etablissement.entities.Etablissement;
+import com.forceN.gestionpatient.outils.SessionsDeTest;
 import com.forceN.gestionpatient.securite.jwt.JwtService;
 import com.forceN.gestionpatient.securite.service.EmailService;
 import com.forceN.gestionpatient.utilisateur.entities.Administrateur;
@@ -66,6 +68,9 @@ class CompteTest {
 
     @MockitoBean
     private EmailService emailService;
+
+    @Autowired
+    private SessionsDeTest sessions;
 
     @Value("${securite.jwt.secret}")
     private String secretJwt;
@@ -151,22 +156,24 @@ class CompteTest {
     }
 
     @Test
-    void unCompteDesactivePerdSonAccesToutDeSuite() throws Exception {
-        String jetonAdmin = jwtService.genererJeton(creer(Administrateur.builder().email("admin.compte@test.invalid")).getEmail());
+    void unMembreSuspenduPerdSonAccesALEtablissementToutDeSuite() throws Exception {
+        String jetonAdmin = jetonAdministrateur();
         Utilisateur secretaire = creer(Secretaire.builder().email("secretaire.compte@test.invalid"));
-        String jetonSecretaire = jwtService.genererJeton(secretaire.getEmail());
+        // La secrétaire travaille dans la même clinique que l'administrateur.
+        String jetonSecretaire = sessions.jeton(secretaire, clinique);
 
         mockMvc.perform(post("/personnel/" + secretaire.getId() + "/desactivation")
                         .header("Authorization", "Bearer " + jetonAdmin))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/utilisateurs/moi").header("Authorization", "Bearer " + jetonSecretaire))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("ACCES_ETABLISSEMENT_RETIRE"));
     }
 
     @Test
     void unNumeroOrdreDejaPrisDonne409() throws Exception {
-        String jetonAdmin = jwtService.genererJeton(creer(Administrateur.builder().email("admin.compte@test.invalid")).getEmail());
+        String jetonAdmin = jetonAdministrateur();
         creer(Medecin.builder().email("medecin.compte@test.invalid").specialite("Cardiologie").numeroOrdre("TEST-ORDRE-1"));
 
         mockMvc.perform(post("/personnel")
@@ -182,6 +189,16 @@ class CompteTest {
     }
 
     // ---------- Outils ----------
+
+    // La clinique de l'administrateur de test (créée par jetonAdministrateur).
+    private Etablissement clinique;
+
+    /** Crée un administrateur affilié à une clinique de test, et le jeton qu'il recevrait en se connectant. */
+    private String jetonAdministrateur() {
+        Utilisateur admin = creer(Administrateur.builder().email("admin.compte@test.invalid"));
+        clinique = sessions.creerClinique("Clinique Compte Test");
+        return sessions.jeton(admin, clinique);
+    }
 
     /** Enregistre un compte actif avec le mot de passe MOT_DE_PASSE. Le rôle est fixé par @PrePersist. */
     private Utilisateur creer(Utilisateur.UtilisateurBuilder<?, ?> compte) {

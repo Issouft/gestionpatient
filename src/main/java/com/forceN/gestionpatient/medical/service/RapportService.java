@@ -4,7 +4,6 @@ import com.forceN.gestionpatient.commun.exception.ApplicationException;
 import com.forceN.gestionpatient.medical.dto.RapportDto;
 import com.forceN.gestionpatient.medical.entities.Rapport;
 import com.forceN.gestionpatient.medical.enums.StatutDemande;
-import com.forceN.gestionpatient.medical.enums.TypeRapport;
 import com.forceN.gestionpatient.medical.exception.MedicalErreur;
 import com.forceN.gestionpatient.medical.repository.ConsultationRepository;
 import com.forceN.gestionpatient.medical.repository.DemandeDisponibiliteRepository;

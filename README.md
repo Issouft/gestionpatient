@@ -77,7 +77,7 @@ Créez dans PostgreSQL une base vide nommée `gestionpatient`, avec l'utilisateu
 sudo -u postgres createdb gestionpatient
 ```
 
-Vous n'avez pas besoin de créer les tables : l'application s'en charge à son démarrage.
+Vous n'avez pas besoin de créer les tables : l'application s'en charge à son démarrage, avec Flyway (voir « Modifier la base de données »).
 
 ### Étape 3 : créer le fichier `.env`
 
@@ -92,7 +92,7 @@ spring.datasource.password=le_mot_de_passe_de_votre_PostgreSQL
 JWT_SECRET=une_longue_suite_de_caracteres_aleatoires
 spring.mail.username=votre.adresse@gmail.com
 spring.mail.password=le_mot_de_passe_d_application_gmail
-administrateur.email=email_du_premier_administrateur
+super-administrateur.email=email_du_super_administrateur
 ```
 
 | Ligne | À quoi elle sert |
@@ -100,7 +100,7 @@ administrateur.email=email_du_premier_administrateur
 | `spring.datasource.password` | Le mot de passe que l'application utilise pour se connecter à **votre** PostgreSQL |
 | `JWT_SECRET` | La clé qui permet au serveur de signer les jetons de connexion |
 | `spring.mail.username` et `spring.mail.password` | Le compte Gmail qui envoie les emails : invitation du personnel et mot de passe oublié |
-| `administrateur.email` | L'email du premier administrateur. Il n'y a pas de mot de passe ici : voir « Le premier administrateur » ci-dessous |
+| `super-administrateur.email` | L'email du super-administrateur, qui gère la plateforme. Il n'y a pas de mot de passe ici : voir « Le super-administrateur » ci-dessous |
 
 Pour obtenir une valeur pour `JWT_SECRET`, lancez cette commande et copiez le résultat :
 
@@ -114,16 +114,20 @@ Pour `spring.mail.password`, n'utilisez pas votre mot de passe Gmail habituel, m
 2. Dans la barre de recherche du compte, tapez « Mots de passe des applications ».
 3. Créez-en un, puis copiez le code de 16 lettres, sans les espaces.
 
-**L'application ne démarre pas si `spring.datasource.password` ou `JWT_SECRET` manque.** Sans la ligne `administrateur.email`, elle démarre, mais aucun administrateur n'est créé.
+**L'application ne démarre pas si `spring.datasource.password` ou `JWT_SECRET` manque.** Sans la ligne `super-administrateur.email`, elle démarre, mais aucun super-administrateur n'est créé.
 
-#### Le premier administrateur
+#### Le super-administrateur
 
-Au premier démarrage, s'il n'existe aucun administrateur, l'application en crée un avec l'email de `.env`. Son compte est **inactif**, et il reçoit un email avec un lien pour choisir **lui-même** son mot de passe. Ainsi, aucun mot de passe d'administrateur n'est écrit dans un fichier, et les développeurs ne le connaissent pas.
+Le **super-administrateur** gère la plateforme : il crée les établissements et invite leurs administrateurs. Il n'appartient à aucun établissement, et **il n'a accès à aucune donnée des cliniques** (personnel, dossiers, consultations, rapports…) : c'est une décision du groupe, pour la confidentialité des données de santé.
+
+Au premier démarrage, s'il n'existe aucun super-administrateur, l'application en crée un avec l'email de `.env`. Son compte est **inactif**, et il reçoit un email avec un lien pour choisir **lui-même** son mot de passe. Ainsi, aucun mot de passe n'est écrit dans un fichier, et les développeurs ne le connaissent pas.
 
 - Le lien se termine par `?jeton=...`. Comme pour le personnel, envoyez ce jeton et le mot de passe choisi à `POST /auth/activation` (voir « Créer un membre du personnel », étape 3).
-- Lien perdu ou expiré ? Redémarrez l'application : tant que l'administrateur n'a pas activé son compte, un nouveau lien part à chaque démarrage. L'ancien ne marche plus.
+- Lien perdu ou expiré ? Redémarrez l'application : tant que le super-administrateur n'a pas activé son compte, un nouveau lien part à chaque démarrage. L'ancien ne marche plus.
 - Si l'email ne part pas, l'application démarre quand même, avec un avertissement dans la console.
-- Si vous aviez une ligne `administrateur.mot-de-passe` dans votre `.env`, supprimez-la : elle ne sert plus. Un administrateur déjà actif dans votre base n'est pas modifié.
+- **L'adresse doit être nouvelle.** Si elle appartient déjà à un compte (patient, administrateur…), le super-administrateur n'est pas créé, et la console affiche une erreur qui le dit. L'application démarre quand même.
+
+**Si votre `.env` contient encore `administrateur.email` :** remplacez-la par `super-administrateur.email`, avec une **autre** adresse. L'ancienne ligne ne sert plus. L'administrateur qui existe déjà dans votre base reste l'administrateur de la « Clinique principale », avec le même mot de passe.
 
 ## 2. Lancer le projet
 
@@ -149,24 +153,72 @@ Si tout va bien, vous verrez `BUILD SUCCESS`. Une longue trace d'erreur peut s'a
 
 Les tests ne modifient pas votre base : chacun est annulé à la fin. Ils n'envoient pas non plus d'emails : l'envoi est remplacé par un faux pendant les tests.
 
+### Modifier la base de données
+
+Les tables sont créées et modifiées par **Flyway**, à partir des fichiers SQL du dossier `src/main/resources/db/migration`. Chaque fichier est une **migration** : une étape numérotée de l'évolution de la base.
+
+Au démarrage, Flyway regarde dans la table `flyway_schema_history` les migrations déjà appliquées à votre base, puis applique les nouvelles, dans l'ordre. Tout le monde a donc la même base, et le serveur aussi le jour de la mise en ligne. Hibernate, lui, ne crée plus rien : il vérifie seulement que les entités correspondent aux tables (`ddl-auto=validate`).
+
+**Ajouter une table ou une colonne :**
+
+1. Modifiez l'entité Java, comme avant.
+2. Créez dans `src/main/resources/db/migration` un fichier qui porte le numéro suivant. Par exemple, si le dernier est `V3__...sql`, créez `V4__ajouter_telephone_medecin.sql`, avec **deux** `_` après le numéro.
+3. Écrivez-y le SQL de la modification :
+
+   ```sql
+   alter table medecin add column telephone varchar(255);
+   ```
+
+4. Redémarrez l'application. La console affiche `Successfully applied 1 migration`.
+
+**Les règles :**
+
+- **Ne modifiez jamais une migration déjà fusionnée dans `main`.** Elle a déjà été appliquée chez les autres, et Flyway refuse de démarrer si son contenu change. Pour corriger, ajoutez une nouvelle migration.
+- **Deux personnes ne prennent pas le même numéro.** Avant d'ouvrir votre PR, faites `git pull` et vérifiez que votre numéro est toujours libre. S'il est pris, renommez votre fichier.
+- **Une migration par changement**, avec un nom qui dit ce qu'elle fait.
+
+`V1__schema_initial.sql` décrit la base telle qu'elle était avant Flyway. Si votre base existait déjà, Flyway ne le rejoue pas : il la marque simplement « version 1 », sans toucher à vos données.
+
+### Tester avec Swagger
+
+Le plus simple pour essayer l'API : une page dans le navigateur, sans rien installer. Elle liste toutes les routes, regroupées par partie, et se met à jour toute seule quand une route change.
+
+1. Démarrez l'application, puis ouvrez **http://localhost:8081/swagger-ui.html**.
+2. Ouvrez *Authentification* → `POST /auth/connexion` → *Try it out*. Écrivez l'email et le mot de passe, puis cliquez sur *Execute*.
+3. Dans la réponse, copiez la valeur du champ `jeton`, sans les guillemets.
+4. Cliquez sur **Authorize** en haut de la page, collez le jeton (sans écrire `Bearer`), puis *Authorize* et *Close*.
+5. Toutes les routes envoient maintenant ce jeton. Ouvrez-en une, puis *Try it out* → *Execute*.
+
+- Le jeton est gardé si vous rechargez la page. Pour changer de compte, cliquez sur **Authorize** → *Logout*, puis collez le nouveau jeton.
+- Le personnel qui travaille dans plusieurs établissements utilise ensuite `POST /auth/etablissement`, puis colle **le nouveau jeton** dans *Authorize*.
+- Une route protégée répond toujours `401` sans jeton : Swagger n'ouvre aucun accès.
+- **En production**, mettez `SWAGGER_ACTIF=false` dans les variables d'environnement : la page et la liste des routes n'existent plus (`404`).
+
 ### Essayer l'API
 
-Avec Postman, par exemple, l'application démarrée.
+Les routes sont décrites ici. On peut les essayer avec Swagger (voir plus haut) ou avec Postman, l'application démarrée.
 
 | Route | Accès | Ce qu'elle fait |
 |---|---|---|
 | `POST /auth/inscription` | Publique | Crée un compte patient. Répond `201 Created` |
-| `POST /auth/connexion` | Publique | Vérifie l'email et le mot de passe, puis renvoie un jeton |
+| `POST /auth/connexion` | Publique | Vérifie l'email et le mot de passe, puis renvoie un jeton et, pour le personnel, ses établissements |
+| `POST /auth/etablissement` | Avec jeton | Le personnel choisit (ou change) l'établissement où il travaille. Renvoie un nouveau jeton |
 | `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe. Un patient y voit aussi sa date de naissance, son âge, son téléphone et son adresse ; un médecin, sa spécialité et son numéro d'ordre |
 | `PUT /utilisateurs/moi` | Avec jeton | Modifie le nom et le prénom ; pour un patient, aussi le téléphone et l'adresse. Renvoie le profil à jour |
 | `PUT /utilisateurs/moi/mot-de-passe` | Avec jeton | Change le mot de passe de la personne connectée, après vérification de l'ancien. Répond `204 No Content` |
 | `POST /auth/mot-de-passe-oublie` | Publique | Envoie par email un lien valable 1 h pour choisir un nouveau mot de passe. Répond toujours `204 No Content`, même si l'email n'a pas de compte |
 | `POST /auth/reinitialisation` | Publique | Change le mot de passe avec le jeton du lien. Répond `204 No Content` |
-| `POST /personnel` | Administrateur | Crée un médecin, une secrétaire ou un pharmacien, puis lui envoie un lien d'activation. Répond `201 Created` |
+| `POST /personnel` | Administrateur | Crée un médecin, une secrétaire ou un pharmacien dans l'établissement de l'administrateur, puis lui envoie un lien d'activation. Répond `201 Created` |
 | `POST /auth/activation` | Publique | Active un compte avec le jeton du lien et le mot de passe choisi. Répond `204 No Content` |
-| `POST /personnel/{id}/invitation` | Administrateur | Envoie un nouveau lien d'activation à une personne qui n'a pas encore activé son compte, ou dont le compte a été désactivé. L'ancien lien ne marche plus. Répond `204 No Content` |
-| `GET /personnel` | Administrateur | Liste les médecins, secrétaires et pharmaciens, actifs ou non, triés par nom |
-| `POST /personnel/{id}/desactivation` | Administrateur | Désactive le compte d'un membre du personnel : il ne peut plus se connecter, et son jeton actuel est refusé tout de suite. Répond `204 No Content` |
+| `POST /personnel/{id}/invitation` | Administrateur | Envoie un nouveau lien d'activation à une personne de son établissement qui n'a pas encore activé son compte. L'ancien lien ne marche plus. Répond `204 No Content` |
+| `GET /personnel` | Administrateur | Liste les médecins, secrétaires et pharmaciens de son établissement, actifs ou non, triés par nom |
+| `POST /personnel/{id}/desactivation` | Administrateur | Suspend un membre du personnel dans son établissement : son jeton pour cet établissement est refusé tout de suite. Ses autres établissements ne changent pas. Répond `204 No Content` |
+| `POST /personnel/{id}/reactivation` | Administrateur | Rend l'accès à l'établissement à un membre suspendu, avec le même mot de passe. Répond `204 No Content` |
+| `POST /etablissements` | Super-administrateur | Crée un établissement. Répond `201 Created` |
+| `GET /etablissements` | Super-administrateur | Liste tous les établissements, actifs ou non, triés par nom |
+| `POST /etablissements/{id}/desactivation` | Super-administrateur | Désactive un établissement : tout son personnel perd l'accès tout de suite. Répond `204 No Content` |
+| `POST /etablissements/{id}/reactivation` | Super-administrateur | Réactive un établissement. Répond `204 No Content` |
+| `POST /etablissements/{id}/administrateurs` | Super-administrateur | Invite l'administrateur d'un établissement : compte inactif rattaché à l'établissement, lien d'activation par email. Répond `201 Created` |
 
 **1. S'inscrire :** `POST http://localhost:8081/auth/inscription`, avec ce corps en JSON (*Body → raw → JSON*) :
 
@@ -194,7 +246,25 @@ Tous les champs sont obligatoires. Le mot de passe doit contenir entre 8 et 72 c
 }
 ```
 
-La réponse contient le jeton. Copiez-le.
+La réponse contient le jeton (`jeton`). Copiez-le. Pour un patient, `etablissementId` vaut `null` et la liste `etablissements` est vide : c'est normal, un patient n'a pas d'établissement à choisir.
+
+**Pour le personnel**, la réponse liste aussi les établissements où il travaille, avec ses rôles :
+
+```json
+{
+  "jeton": "eyJhbGciOi...",
+  "etablissementId": null,
+  "etablissements": [
+    { "etablissementId": 1, "etablissementNom": "Clinique A", "roles": ["MEDECIN"] },
+    { "etablissementId": 4, "etablissementNom": "Clinique B", "roles": ["MEDECIN"] }
+  ]
+}
+```
+
+- **Un seul établissement :** `etablissementId` est déjà rempli, et le jeton permet de travailler tout de suite.
+- **Plusieurs établissements :** `etablissementId` vaut `null`. Choisissez-en un avec `POST http://localhost:8081/auth/etablissement`, avec ce jeton (*Bearer Token*) et ce corps : `{"etablissementId": 4}`. La réponse contient un **nouveau jeton** : utilisez-le pour la suite. La même route sert à changer d'établissement.
+
+Les comptes qui existaient avant les établissements sont rattachés à la « Clinique principale » : ils n'ont rien à choisir.
 
 **3. Voir son profil :** `GET http://localhost:8081/utilisateurs/moi`, sans corps. Dans l'onglet *Authorization*, choisissez *Bearer Token* et collez le jeton. Sans jeton, la réponse est `401`.
 
@@ -243,11 +313,67 @@ Puis `POST http://localhost:8081/auth/reinitialisation`, sans jeton de connexion
 
 La réponse est `204`. Le lien ne marche qu'une fois, et seul le dernier lien demandé est valable. Comme pour un changement de mot de passe, les sessions ouvertes avant sont fermées. Un compte inactif ne reçoit pas de lien : un membre du personnel qui n'a pas encore activé son compte doit utiliser son invitation.
 
+#### Gérer les établissements (super-administrateur)
+
+Le super-administrateur crée les établissements de la plateforme. Il voit leur fiche (nom, type, adresse, contact), mais **jamais leurs données** : ni personnel, ni patients, ni dossiers.
+
+**1. Se connecter en super-administrateur :** `POST /auth/connexion` avec son email et le mot de passe qu'il a choisi (voir « Le super-administrateur »). Copiez le jeton.
+
+**2. Créer un établissement :** `POST http://localhost:8081/etablissements`, avec le jeton du super-administrateur (*Bearer Token*) :
+
+```json
+{
+  "nom": "Clinique du Plateau",
+  "type": "CLINIQUE",
+  "adresse": "12 rue Carnot",
+  "ville": "Dakar",
+  "telephone": "338210000",
+  "email": "contact@clinique-plateau.sn"
+}
+```
+
+- `nom` et `type` sont obligatoires. `type` vaut `CLINIQUE`, `CABINET`, `PHARMACIE` ou `LABORATOIRE`.
+- `email` est l'adresse de contact de l'établissement : ce n'est pas un compte de connexion.
+- Réponse `201`, avec `"actif": true`. Notez l'`id` : il sert à inviter l'administrateur de l'établissement.
+
+**3. Lister les établissements :** `GET http://localhost:8081/etablissements`. Le champ `actif` indique si chacun est actif.
+
+**4. Désactiver un établissement :** `POST http://localhost:8081/etablissements/7/desactivation`, **sans corps**. Réponse `204`.
+
+- Tout son personnel perd l'accès à sa requête suivante (`401` avec le code `ACCES_ETABLISSEMENT_RETIRE`), et l'établissement n'est plus proposé à la connexion.
+- Ses données restent en base. `POST /etablissements/7/reactivation` le réactive, et son personnel retrouve l'accès.
+- `404` avec le code `ETABLISSEMENT_INTROUVABLE` : aucun établissement ne porte cet `id`.
+
+#### Créer l'administrateur d'un établissement
+
+C'est le super-administrateur qui invite l'administrateur d'un établissement. Comme pour le personnel, il ne choisit pas le mot de passe : la personne reçoit un email et le choisit elle-même.
+
+**1. Inviter l'administrateur :** `POST http://localhost:8081/etablissements/7/administrateurs` (7 est l'`id` de l'établissement), avec le jeton du super-administrateur (*Bearer Token*) :
+
+```json
+{
+  "nom": "Diop",
+  "prenom": "Awa",
+  "email": "une.adresse@dont-vous-lisez-les-emails.sn"
+}
+```
+
+- Réponse `201`, avec `"role": "ADMINISTRATEUR"` et `"actif": false` : le compte existe, mais il ne peut pas encore se connecter.
+- Le compte est rattaché à cet établissement. Un établissement peut avoir plusieurs administrateurs.
+- `409` avec le code `EMAIL_DEJA_UTILISE` : cet email a déjà un compte. Un compte n'a qu'un rôle : choisissez une autre adresse.
+- `404` avec le code `ETABLISSEMENT_INTROUVABLE` : aucun établissement ne porte cet `id`.
+
+**2. Activer le compte :** la personne ouvre le lien reçu par email et choisit son mot de passe. Pour tester sans navigateur : `POST /auth/activation` avec le jeton du lien et le mot de passe, comme pour le personnel (voir « Créer un membre du personnel »).
+
+**3. Se connecter :** `POST /auth/connexion`. S'il n'administre qu'un établissement, le jeton le désigne directement. Il peut alors gérer le personnel de cet établissement.
+
 #### Créer un membre du personnel
 
 Le personnel ne s'inscrit pas lui-même : c'est l'administrateur qui crée son compte. L'administrateur ne choisit pas le mot de passe. La personne reçoit un email et choisit elle-même son mot de passe, que personne d'autre ne connaît.
 
-**1. Se connecter en administrateur :** `POST /auth/connexion` avec l'email de l'administrateur et le mot de passe qu'il a choisi (voir « Le premier administrateur »). Copiez le jeton.
+**Tout se passe dans l'établissement de l'administrateur**, celui de son jeton. La personne créée y est rattachée automatiquement. L'administrateur ne voit ni ne touche le personnel des autres établissements : pour lui, il n'existe pas (`404`).
+
+**1. Se connecter en administrateur :** `POST /auth/connexion` avec l'email de l'administrateur et le mot de passe qu'il a choisi (voir « Créer l'administrateur d'un établissement »). Copiez le jeton.
 
 **2. Créer le compte :** `POST http://localhost:8081/personnel`, avec le jeton de l'administrateur (*Bearer Token*) :
 
@@ -282,17 +408,20 @@ La réponse `204` n'a pas de corps : c'est normal. Le lien est valable 48 heures
 
 - `204` : un nouvel email est parti. **Seul le dernier lien marche** : les anciens sont désactivés, pour qu'il n'y ait jamais deux liens valides en même temps.
 - `409` avec le code `COMPTE_DEJA_ACTIF` : la personne a déjà activé son compte, aucun email n'est envoyé.
-- `404` avec le code `UTILISATEUR_INTROUVABLE` : aucun compte ne porte cet `id`.
+- `404` avec le code `UTILISATEUR_INTROUVABLE` : aucun membre du personnel de votre établissement ne porte cet `id`.
 
-**5. Lister le personnel :** `GET http://localhost:8081/personnel`, avec le jeton de l'administrateur. Le champ `actif` de chaque compte indique s'il peut se connecter.
+**5. Lister le personnel :** `GET http://localhost:8081/personnel`, avec le jeton de l'administrateur. Seul le personnel de son établissement apparaît. Pour chaque personne :
 
-**6. Désactiver un compte :** `POST http://localhost:8081/personnel/51/desactivation`, avec le jeton de l'administrateur et **sans corps**. Réponse `204`, même si le compte était déjà inactif.
+- `statutDansEtablissement` : `ACTIVE`, ou `SUSPENDUE` si l'administrateur l'a suspendue (étape 6) ;
+- `actif` : `false` tant que la personne n'a pas activé son compte avec le lien de l'email.
 
-- La personne ne peut plus se connecter, et le jeton qu'elle utilisait est refusé (`401`) dès sa requête suivante.
-- Les liens qu'elle avait reçus (invitation, mot de passe oublié) ne marchent plus, et « mot de passe oublié » ne lui envoie rien.
-- `404` si l'`id` n'est pas celui d'un médecin, d'une secrétaire ou d'un pharmacien : un patient ou un administrateur ne se désactive pas ici.
+**6. Suspendre un membre du personnel :** `POST http://localhost:8081/personnel/51/desactivation`, avec le jeton de l'administrateur et **sans corps**. Réponse `204`, même si la personne était déjà suspendue.
 
-**Réactiver un compte :** renvoyez l'invitation (étape 4). La personne choisit un nouveau mot de passe avec le lien, et son compte redevient actif.
+- La suspension ne vaut que **dans l'établissement de l'administrateur**. Le jeton de la personne pour cet établissement est refusé dès sa requête suivante (`401` avec le code `ACCES_ETABLISSEMENT_RETIRE`).
+- Si elle travaille aussi dans un autre établissement, elle continue d'y travailler normalement : un administrateur ne peut pas couper son accès ailleurs. Son compte et son mot de passe ne changent pas.
+- `404` si l'`id` n'est pas celui d'un médecin, d'une secrétaire ou d'un pharmacien de votre établissement : un patient, un administrateur ou le personnel d'un autre établissement ne se suspend pas ici.
+
+**7. Réactiver un membre du personnel :** `POST http://localhost:8081/personnel/51/reactivation`, avec le jeton de l'administrateur et **sans corps**. Réponse `204`, même si la personne n'était pas suspendue. Elle retrouve son accès à l'établissement **avec le même mot de passe** : aucun email n'est envoyé. Mêmes cas de `404` que pour la suspension.
 
 #### Le parcours médical (Partie 3)
 
@@ -570,10 +699,18 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 | Réponse `409` avec le code `NUMERO_ORDRE_DEJA_UTILISE` | Un autre médecin a déjà ce numéro d'ordre | Vérifiez le numéro d'ordre |
 | Réponse `409` avec le code `DONNEE_DEJA_UTILISEE` | La base a refusé une valeur déjà prise. Arrive surtout quand la même demande est envoyée deux fois en même temps (double clic) | Vérifiez si le compte n'a pas déjà été créé |
 | Réponse `503` avec le code `ENVOI_EMAIL_IMPOSSIBLE` | Le serveur d'emails n'a pas répondu. Rien n'a été créé | Vérifiez `spring.mail.username` et `spring.mail.password` dans `.env` et la connexion Internet, puis réessayez |
-| Réponse `403` | Vous êtes connecté, mais votre rôle n'a pas le droit d'utiliser cette route | Connectez-vous avec le bon compte, par exemple l'administrateur pour `POST /personnel` |
+| Réponse `403` avec le code `ETABLISSEMENT_NON_CHOISI` | Vous travaillez dans plusieurs établissements et n'en avez pas encore choisi un | Envoyez `POST /auth/etablissement`, puis utilisez le nouveau jeton (voir « Essayer l'API », étape 2) |
+| Réponse `403` avec le code `ETABLISSEMENT_NON_AUTORISE` | Vous n'êtes pas affilié à cet établissement, ou votre accès y est suspendu | Choisissez un établissement de la liste reçue à la connexion |
+| Réponse `401` avec le code `ACCES_ETABLISSEMENT_RETIRE` | Votre accès à l'établissement du jeton a été retiré, ou l'établissement a été désactivé | Reconnectez-vous et choisissez un autre établissement |
+| Réponse `403` | Vous êtes connecté, mais votre rôle n'a pas la permission d'utiliser cette route (voir `RolePermissions`) | Connectez-vous avec le bon compte, par exemple l'administrateur pour `POST /personnel` |
 | Réponse `400` avec le code `MOT_DE_PASSE_INCORRECT` | L'ancien mot de passe envoyé pour en changer est faux | Vérifiez l'ancien mot de passe. Ce n'est pas un `401` : la session est toujours valable |
 | Réponse `400` avec le code `JETON_INVALIDE` | Le lien reçu par email (invitation ou mot de passe oublié) est faux, a expiré ou a déjà servi | Copiez le lien du **dernier** email reçu, avec un clic droit plutôt qu'à la main. S'il a expiré : pour une invitation, l'administrateur peut la renvoyer (voir « Créer un membre du personnel », étape 4) ; pour un mot de passe oublié, refaites la demande |
 | `cannot find symbol` sur `MEDECIN`, ou `incompatible types` avec `Role` | VS Code a importé une autre classe `Role` : `javax.management.relation.Role` | Remplacez l'import par `com.forceN.gestionpatient.utilisateur.enums.Role` |
+| `Schema-validation: missing table` ou `missing column` | Une entité a une table ou un champ qu'aucune migration ne crée | Ajoutez une migration (voir « Modifier la base de données ») |
+| `Schema-validation: wrong column type` | Le type d'un champ Java ne correspond pas à la colonne | Corrigez l'entité, ou ajoutez une migration qui change la colonne |
+| `Validate failed: Migrations have failed validation` | Une migration déjà appliquée a été modifiée | Annulez la modification du fichier (`git restore`), puis mettez votre changement dans une nouvelle migration |
+| Réponse `404` avec le code `ETABLISSEMENT_INTROUVABLE` | Aucun établissement ne porte cet `id` | Vérifiez l'`id` avec `GET /etablissements` |
+| `Super-administrateur non créé : ... appartient déjà à un autre compte` dans la console | L'adresse de `super-administrateur.email` est déjà celle d'un autre compte | Choisissez une autre adresse dans `.env`, puis redémarrez |
 | `'url' attribute is not specified` après un redémarrage automatique | Un `clean` a vidé le dossier `target` pendant que l'application tournait | Arrêtez l'application, puis relancez-la. Ne lancez pas `clean` pendant qu'elle tourne |
 
 ## 5. Où en est le projet
@@ -590,8 +727,10 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 - Le mot de passe oublié, avec un lien par email valable 1 heure
 - La création du personnel par l'administrateur, avec une invitation par email
 - Le renvoi d'une invitation, avec un seul lien valide à la fois
-- La liste du personnel et la désactivation d'un compte par l'administrateur
-- La création du premier administrateur au démarrage : il choisit lui-même son mot de passe grâce à un lien envoyé par email
+- La liste du personnel, sa suspension et sa réactivation par l'administrateur, dans son établissement seulement
+- La création du super-administrateur au démarrage : il choisit lui-même son mot de passe grâce à un lien envoyé par email
+- La gestion des établissements par le super-administrateur (création, liste, désactivation, réactivation), sans accès à leurs données
+- L'invitation de l'administrateur d'un établissement par le super-administrateur
 
 **Ce qui manque :**
 

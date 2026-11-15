@@ -21,23 +21,38 @@ Ce changement ne modifie ni les fonctionnalités ni les tables de la base de don
 com.forceN.gestionpatient
 ├── commun
 │   ├── AbstractEntity
+│   ├── config    : SwaggerConfig (page de test /swagger-ui.html ; groupes de routes par partie)
 │   └── exception : CodeErreur, ApplicationException, GlobalExceptionHandler
+│
+├── etablissement                   ← socle SaaS : les établissements de la plateforme
+│   ├── entities   : Etablissement, Affiliation (tel compte a tel rôle dans tel établissement)
+│   ├── enums      : TypeEtablissement (CLINIQUE, CABINET, PHARMACIE, LABORATOIRE), StatutAffiliation
+│   ├── dto        : EtablissementDto, AccesEtablissementDto
+│   ├── exception  : EtablissementErreur
+│   ├── controller : EtablissementController (super-administrateur)
+│   ├── service    : EtablissementService, AffiliationService (où une personne peut travailler : utilisé par la sécurité)
+│   └── repository : EtablissementRepository, AffiliationRepository
 │
 ├── securite                        ← Partie 1
 │   ├── config     : SecurityConfig
-│   ├── jwt        : JwtService, JwtFiltre
+│   ├── permission : Permission, RolePermissions (les droits de chaque rôle)
+│   ├── jwt        : JwtService, JwtFiltre, JetonLu
 │   ├── controller : AuthController
-│   ├── service    : AuthService, UtilisateurConnecteService
-│   ├── dto        : ConnexionRequete, ConnexionReponse, ChoixMotDePasseRequete, MotDePasseOublieRequete
+│   ├── service    : AuthService, UtilisateurConnecteService, CompteAuthentifie (la personne connectée)
+│   ├── dto        : ConnexionRequete, ConnexionReponse, ChoixEtablissementRequete,
+│   │                ChoixMotDePasseRequete, MotDePasseOublieRequete
 │   └── exception  : SecuriteErreur, SecuriteErreurHandler
 │
 ├── utilisateur                     ← Partie 1
-│   ├── entities : Utilisateur, Patient, Medecin, Secretaire, Pharmacien, Administrateur
+│   ├── entities : Utilisateur, Patient, Medecin, Secretaire, Pharmacien, Administrateur, SuperAdministrateur
 │   ├── dto      : UtilisateurDto, PatientDto, MedecinDto (réponses) ;
-│   │              PatientInscriptionDto, PersonnelCreationDto, ModificationProfilDto, ChangementMotDePasseDto (requêtes)
+│   │              PatientInscriptionDto, PersonnelCreationDto, AdministrateurInvitationDto,
+│   │              ModificationProfilDto, ChangementMotDePasseDto (requêtes)
 │   ├── enums    : Role, Sexe
 │   ├── exception : UtilisateurErreur
-│   ├── controller
+│   ├── controller : UtilisateurController, PersonnelController,
+│   │                AdministrateurEtablissementController (POST /etablissements/{id}/administrateurs :
+│   │                ici et pas dans etablissement, car c'est ce module qui crée les comptes)
 │   ├── service
 │   └── repository
 │
@@ -113,6 +128,7 @@ Le responsable d'une partie s'en occupe en priorité et connaît bien ses classe
 5. **Un DTO n'a pas d'annotation JPA** (`@Entity`, `@Column`, `@PrePersist`, etc.).
 6. **Un domaine peut utiliser les classes d'un autre.** `RendezVous` utilise `Patient`, par exemple, et c'est normal.
 7. **Avant de modifier une classe d'un autre domaine ou un fichier partagé, prévenez son responsable.** Les fichiers partagés sont notamment `commun`, `pom.xml` et `application.properties`.
+8. **Toute modification d'une table passe par une migration Flyway.** Une nouvelle entité ou un nouveau champ s'accompagne d'un fichier `V<numéro>__<description>.sql` dans `src/main/resources/db/migration`. Un fichier de migration déjà fusionné dans `main` ne se modifie jamais : on en ajoute un nouveau. Voir le README, « Modifier la base de données ».
 
 ## 6. Comment gérer une erreur
 
@@ -184,6 +200,21 @@ public class StockInsuffisantException extends ApplicationException {
 
 Un **jeton JWT** est comme un badge signé par le serveur. Il est valable 60 minutes. Ensuite, il faut se reconnecter.
 
+### L'établissement dans le jeton (SaaS)
+
+Le personnel travaille **dans un établissement à la fois**. Son jeton contient l'email et l'`id` de cet établissement, **mais jamais son rôle ni ses permissions**.
+
+À chaque requête, `JwtFiltre` relit en base le compte et les affiliations (via `AffiliationService`), puis calcule les permissions avec `RolePermissions` à partir du rôle de la personne **dans cet établissement**. Ainsi, une affiliation suspendue, un établissement désactivé, un compte désactivé ou un mot de passe changé coupent l'accès dès la requête suivante, sans attendre la fin du jeton.
+
+| Qui | Son jeton | Ses permissions |
+|---|---|---|
+| Patient | Sans établissement : il agit pour lui-même, dans toutes ses cliniques | Celles du rôle `PATIENT` |
+| Super-administrateur | Sans établissement : il gère la plateforme | Seulement `ETABLISSEMENT_GERER`. **Aucune donnée des cliniques**, par décision du groupe |
+| Personnel avec un seul établissement | Avec cet établissement, dès la connexion | Celles de ses rôles dans cet établissement |
+| Personnel avec plusieurs établissements | Sans établissement à la connexion, puis avec celui choisi par `POST /auth/etablissement` | Aucune tant qu'il n'a pas choisi : `403 ETABLISSEMENT_NON_CHOISI` |
+
+Dans un contrôleur, `@AuthenticationPrincipal CompteAuthentifie connecte` donne l'email (`connecte.email()`) et l'établissement de la session (`connecte.etablissementId()`). Les contrôleurs qui reçoivent `UserDetails` continuent de marcher.
+
 **Toutes les routes sont fermées par défaut.** Seules trois routes sont publiques, car la personne n'a pas encore de jeton de connexion :
 
 | Route | Pourquoi elle est publique |
@@ -199,13 +230,19 @@ Pour rendre une autre route publique, il faut l'ajouter dans `SecurityConfig`. E
 | Niveau | Question | Où | Réponse si refus |
 |---|---|---|---|
 | 1. Identité | Qui es-tu ? | `JwtFiltre`, déjà en place | 401 |
-| 2. Rôle | As-tu le droit de faire cette action ? | Contrôleur, avec `@PreAuthorize` | 403 |
+| 2. Permission | As-tu le droit de faire cette action ? | Contrôleur, avec `@PreAuthorize` | 403 |
 | 3. Propriété | Cette donnée te concerne-t-elle ? | Service, à écrire pour chaque donnée sensible | 403 |
 
-Pour limiter une route à un rôle :
+**Une route vérifie une permission, jamais un rôle :**
 
 ```java
-@PreAuthorize("hasRole('MEDECIN')")
+@PreAuthorize("hasAuthority('CONSULTATION_CREER')")
 ```
 
-**Le niveau 3 est obligatoire pour les données médicales.** Le rôle seul ne suffit pas : un patient connecté pourrait lire le dossier d'un autre en changeant l'`id` dans l'URL. Le service doit donc vérifier que la donnée appartient bien à la personne connectée, ou qu'elle a le droit d'y accéder.
+- Les permissions sont listées dans `securite/permission/Permission.java`.
+- Les permissions de chaque rôle sont décidées à un seul endroit : `securite/permission/RolePermissions.java`.
+- Pour une nouvelle route, réutilisez une permission qui a le même sens. Sinon, ajoutez-en une dans `Permission`, puis donnez-la aux rôles concernés dans `RolePermissions`.
+
+Ainsi, changer les droits d'un rôle, ou ajouter un rôle comme infirmier ou laborantin, ne demande aucune modification des contrôleurs. N'utilisez plus `hasRole('MEDECIN')` : la route serait liée à un rôle et échapperait à `RolePermissions`.
+
+**Le niveau 3 est obligatoire pour les données médicales.** La permission seule ne suffit pas : un patient connecté pourrait lire le dossier d'un autre en changeant l'`id` dans l'URL. Le service doit donc vérifier que la donnée appartient bien à la personne connectée, ou qu'elle a le droit d'y accéder.

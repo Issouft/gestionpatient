@@ -1,13 +1,13 @@
 package com.forceN.gestionpatient.medical;
 
-import com.forceN.gestionpatient.medical.entities.Consultation;
+import com.forceN.gestionpatient.etablissement.entities.Etablissement;
 import com.forceN.gestionpatient.medical.entities.DossierPatient;
 import com.forceN.gestionpatient.medical.entities.Medicament;
 import com.forceN.gestionpatient.medical.repository.DossierPatientRepository;
 import com.forceN.gestionpatient.medical.repository.MedicamentRepository;
+import com.forceN.gestionpatient.outils.SessionsDeTest;
 import com.forceN.gestionpatient.rendezvous.entities.RendezVous;
 import com.forceN.gestionpatient.rendezvous.enums.StatutRendezVous;
-import com.forceN.gestionpatient.securite.jwt.JwtService;
 import com.forceN.gestionpatient.securite.service.EmailService;
 import com.forceN.gestionpatient.utilisateur.entities.Administrateur;
 import com.forceN.gestionpatient.utilisateur.entities.Medecin;
@@ -63,9 +63,6 @@ class MedicalTest {
     @Autowired
     private EntityManager entityManager;
 
-    @Autowired
-    private JwtService jwtService;
-
     // Aucun email ne doit partir pendant les tests.
     @MockitoBean
     private EmailService emailService;
@@ -75,8 +72,15 @@ class MedicalTest {
     private Medecin medecin;
     private Pharmacien pharmacien;
 
+    // Le personnel travaille dans cette clinique : son jeton la désigne (voir envoyer()).
+    @Autowired
+    private SessionsDeTest sessions;
+
+    private Etablissement clinique;
+
     @BeforeEach
     void creerLesComptes() {
+        clinique = sessions.creerClinique("Clinique Medical Test");
         patient = creer(Patient.builder().email("patient.medical@test.invalid"));
         secretaire = creer(Secretaire.builder().email("secretaire.medical@test.invalid"));
         medecin = creer(Medecin.builder().email("medecin.medical@test.invalid")
@@ -401,7 +405,7 @@ class MedicalTest {
 
     private ResultActions envoyer(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder requete,
             Utilisateur connecte, String corps) throws Exception {
-        requete.header("Authorization", "Bearer " + jwtService.genererJeton(connecte.getEmail()));
+        requete.header("Authorization", "Bearer " + sessions.jeton(connecte, clinique));
         if (corps != null) {
             requete.contentType(MediaType.APPLICATION_JSON).content(corps);
         }

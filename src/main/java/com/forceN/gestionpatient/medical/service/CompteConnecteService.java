@@ -14,8 +14,10 @@ import org.springframework.stereotype.Service;
 
 /**
  * Retrouve le compte de la personne connectée (l'email vient du jeton), avec son vrai type.
- * Les contrôleurs vérifient déjà le rôle avec @PreAuthorize : le type correspond donc toujours,
+ * Les contrôleurs vérifient déjà la permission avec @PreAuthorize, et chaque permission utilisée ici
+ * n'est donnée qu'au bon rôle (voir RolePermissions) : le type correspond donc toujours,
  * sauf si le compte a été supprimé après la création du jeton (404).
+ * Si une permission est donnée à un autre rôle, la méthode correspondante répondra 404 : l'adapter alors.
  */
 @Service
 @RequiredArgsConstructor
