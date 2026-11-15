@@ -179,9 +179,24 @@ Au démarrage, Flyway regarde dans la table `flyway_schema_history` les migratio
 
 `V1__schema_initial.sql` décrit la base telle qu'elle était avant Flyway. Si votre base existait déjà, Flyway ne le rejoue pas : il la marque simplement « version 1 », sans toucher à vos données.
 
+### Tester avec Swagger
+
+Le plus simple pour essayer l'API : une page dans le navigateur, sans rien installer. Elle liste toutes les routes, regroupées par partie, et se met à jour toute seule quand une route change.
+
+1. Démarrez l'application, puis ouvrez **http://localhost:8081/swagger-ui.html**.
+2. Ouvrez *Authentification* → `POST /auth/connexion` → *Try it out*. Écrivez l'email et le mot de passe, puis cliquez sur *Execute*.
+3. Dans la réponse, copiez la valeur du champ `jeton`, sans les guillemets.
+4. Cliquez sur **Authorize** en haut de la page, collez le jeton (sans écrire `Bearer`), puis *Authorize* et *Close*.
+5. Toutes les routes envoient maintenant ce jeton. Ouvrez-en une, puis *Try it out* → *Execute*.
+
+- Le jeton est gardé si vous rechargez la page. Pour changer de compte, cliquez sur **Authorize** → *Logout*, puis collez le nouveau jeton.
+- Le personnel qui travaille dans plusieurs établissements utilise ensuite `POST /auth/etablissement`, puis colle **le nouveau jeton** dans *Authorize*.
+- Une route protégée répond toujours `401` sans jeton : Swagger n'ouvre aucun accès.
+- **En production**, mettez `SWAGGER_ACTIF=false` dans les variables d'environnement : la page et la liste des routes n'existent plus (`404`).
+
 ### Essayer l'API
 
-Avec Postman, par exemple, l'application démarrée.
+Les routes sont décrites ici. On peut les essayer avec Swagger (voir plus haut) ou avec Postman, l'application démarrée.
 
 | Route | Accès | Ce qu'elle fait |
 |---|---|---|

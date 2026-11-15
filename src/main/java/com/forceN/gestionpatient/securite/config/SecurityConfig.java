@@ -41,6 +41,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/activation").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/mot-de-passe-oublie").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/reinitialisation").permitAll()
+                        // Swagger : seulement la page et la description des routes (lecture).
+                        // Les routes elles-mêmes restent protégées. Désactivable avec SWAGGER_ACTIF=false.
+                        .requestMatchers(HttpMethod.GET, "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
                         .anyRequest().authenticated())
                 .exceptionHandling(erreurs -> erreurs

@@ -21,6 +21,7 @@ Ce changement ne modifie ni les fonctionnalités ni les tables de la base de don
 com.forceN.gestionpatient
 ├── commun
 │   ├── AbstractEntity
+│   ├── config    : SwaggerConfig (page de test /swagger-ui.html ; groupes de routes par partie)
 │   └── exception : CodeErreur, ApplicationException, GlobalExceptionHandler
 │
 ├── etablissement                   ← socle SaaS : les établissements de la plateforme
