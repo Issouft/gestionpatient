@@ -73,7 +73,17 @@ public class EtablissementService {
      */
     @Transactional(readOnly = true)
     public void exigerActif(Integer id) {
-        etablissementRepository.findByIdAndActifTrue(id).orElseThrow(EtablissementService::introuvable);
+        ficheActive(id);
+    }
+
+    /** La fiche publique d'un établissement actif (annuaire). 404 s'il n'existe pas ou est désactivé. */
+    @Transactional(readOnly = true)
+    public EtablissementPublicDto fichePublique(Integer id) {
+        return EtablissementPublicDto.fromEntity(ficheActive(id));
+    }
+
+    private Etablissement ficheActive(Integer id) {
+        return etablissementRepository.findByIdAndActifTrue(id).orElseThrow(EtablissementService::introuvable);
     }
 
     /** Pour les autres modules (ex. inviter un administrateur) : 404 si l'établissement n'existe pas. */

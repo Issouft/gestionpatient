@@ -76,6 +76,22 @@ class AnnuaireTest {
     }
 
     @Test
+    void laFicheDUnEtablissementActifEstPubliqueEtCelleDUnEtablissementDesactiveDonne404() throws Exception {
+        Etablissement fermee = etablir("Clinique Fermee", TypeEtablissement.CLINIQUE, VILLE, false);
+
+        mockMvc.perform(get("/annuaire/etablissements/" + clinique.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nom").value("Clinique Annuaire"))
+                .andExpect(jsonPath("$.actif").doesNotExist());
+
+        for (Integer id : new Integer[] {fermee.getId(), 999_999_999}) {
+            mockMvc.perform(get("/annuaire/etablissements/" + id))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("ETABLISSEMENT_INTROUVABLE"));
+        }
+    }
+
+    @Test
     void unTypeInconnuDonne400AvecLesValeursPossibles() throws Exception {
         mockMvc.perform(get("/annuaire/etablissements").param("type", "HOPITAL"))
                 .andExpect(status().isBadRequest())

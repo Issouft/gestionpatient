@@ -239,6 +239,7 @@ Les routes sont décrites ici. On peut les essayer avec Swagger (voir plus haut)
 | `POST /etablissements/{id}/reactivation` | Super-administrateur | Réactive un établissement. Répond `204 No Content` |
 | `POST /etablissements/{id}/administrateurs` | Super-administrateur | Invite l'administrateur d'un établissement : compte inactif rattaché à l'établissement, lien d'activation par email. Répond `201 Created` |
 | `GET /annuaire/etablissements` | Publique | Liste les établissements actifs, triés par nom. Filtres facultatifs : `?type=CLINIQUE&ville=Thiès` |
+| `GET /annuaire/etablissements/{id}` | Publique | La fiche publique d'un établissement actif. `404` s'il n'existe pas ou est désactivé |
 | `GET /annuaire/etablissements/{id}/medecins` | Publique | Liste les médecins en activité de cet établissement : nom, prénom et spécialité. Filtre facultatif : `?specialite=Cardiologie` |
 | `POST /patients/moi/etablissements/{id}` | Patient | Le patient rejoint cette clinique : elle pourra voir ses rendez-vous et son dossier. Répond `204 No Content`, même s'il l'avait déjà rejointe |
 | `GET /patients/moi/etablissements` | Patient | Liste les cliniques actives que le patient a rejointes, triées par nom |
