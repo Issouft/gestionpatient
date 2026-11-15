@@ -45,10 +45,13 @@ com.forceN.gestionpatient
 ├── utilisateur                     ← Partie 1
 │   ├── entities : Utilisateur, Patient, Medecin, Secretaire, Pharmacien, Administrateur, SuperAdministrateur
 │   ├── dto      : UtilisateurDto, PatientDto, MedecinDto (réponses) ;
-│   │              PatientInscriptionDto, PersonnelCreationDto, ModificationProfilDto, ChangementMotDePasseDto (requêtes)
+│   │              PatientInscriptionDto, PersonnelCreationDto, AdministrateurInvitationDto,
+│   │              ModificationProfilDto, ChangementMotDePasseDto (requêtes)
 │   ├── enums    : Role, Sexe
 │   ├── exception : UtilisateurErreur
-│   ├── controller
+│   ├── controller : UtilisateurController, PersonnelController,
+│   │                AdministrateurEtablissementController (POST /etablissements/{id}/administrateurs :
+│   │                ici et pas dans etablissement, car c'est ce module qui crée les comptes)
 │   ├── service
 │   └── repository
 │

@@ -14,11 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.forceN.gestionpatient.commun.exception.ApplicationException;
 import com.forceN.gestionpatient.etablissement.enums.StatutAffiliation;
 import com.forceN.gestionpatient.etablissement.service.AffiliationService;
+import com.forceN.gestionpatient.etablissement.service.EtablissementService;
 import com.forceN.gestionpatient.securite.exception.SecuriteErreur;
 import com.forceN.gestionpatient.securite.service.EmailService;
 import com.forceN.gestionpatient.securite.service.JetonActivationService;
+import com.forceN.gestionpatient.utilisateur.dto.AdministrateurInvitationDto;
 import com.forceN.gestionpatient.utilisateur.dto.PersonnelCreationDto;
 import com.forceN.gestionpatient.utilisateur.dto.UtilisateurDto;
+import com.forceN.gestionpatient.utilisateur.entities.Administrateur;
 import com.forceN.gestionpatient.utilisateur.entities.Medecin;
 import com.forceN.gestionpatient.utilisateur.entities.Pharmacien;
 import com.forceN.gestionpatient.utilisateur.entities.Secretaire;
@@ -32,7 +35,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Gestion du personnel (médecin, secrétaire, pharmacien) par l'administrateur : création, invitation, liste,
- * suspension et réactivation.
+ * suspension et réactivation. Aussi l'invitation de l'administrateur d'un établissement par le super-administrateur.
  * Tout se limite à l'établissement de l'administrateur (celui de son jeton) : il ne voit ni ne touche
  * le personnel des autres établissements.
  */
@@ -50,6 +53,7 @@ public class PersonnelService {
     private final EmailService emailService;
     private final UtilisateurService utilisateurService;
     private final AffiliationService affiliationService;
+    private final EtablissementService etablissementService;
 
     /**
      * Crée un compte inactif pour un membre du personnel et lui envoie le lien d'activation.
@@ -59,33 +63,53 @@ public class PersonnelService {
     @Transactional
     public UtilisateurDto creer(PersonnelCreationDto dto, Integer etablissementId) {
         exigerEtablissement(etablissementId);
-        // 1. Email normalisé + refus s'il est déjà pris
-        String email = dto.getEmail().trim().toLowerCase(Locale.ROOT);
+        String email = emailLibre(dto.getEmail());
+        // Le bon objet selon le rôle (refuse PATIENT et ADMINISTRATEUR)
+        Utilisateur personnel = creerSelonRole(dto);
+        return inviter(personnel, dto.getNom(), dto.getPrenom(), email, etablissementId);
+    }
+
+    /**
+     * Le super-administrateur invite l'administrateur d'un établissement : même invitation que le personnel
+     * (compte inactif, lien pour choisir son mot de passe), avec le rôle ADMINISTRATEUR dans cet établissement.
+     * Un établissement peut avoir plusieurs administrateurs.
+     */
+    // Tout ou rien : si l'email ne part pas, le compte et le jeton sont annulés.
+    @Transactional
+    public UtilisateurDto inviterAdministrateur(AdministrateurInvitationDto dto, Integer etablissementId) {
+        etablissementService.exigerExistant(etablissementId); // 404 si inconnu
+        String email = emailLibre(dto.email());
+        return inviter(new Administrateur(), dto.nom(), dto.prenom(), email, etablissementId);
+    }
+
+    /**
+     * Partagé par le personnel et l'administrateur : remplit le compte, l'enregistre inactif, le rattache
+     * à l'établissement et envoie le lien d'activation. La réponse ne contient pas le mot de passe.
+     */
+    private UtilisateurDto inviter(Utilisateur compte, String nom, String prenom, String email, Integer etablissementId) {
+        compte.setNom(nom.trim());
+        compte.setPrenom(prenom.trim());
+        compte.setEmail(email);
+        // Mot de passe aléatoire que personne ne connaît, en attendant l'activation.
+        compte.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+        // Inactif : impossible de se connecter avant d'avoir choisi son mot de passe.
+        compte.setActif(false);
+
+        Utilisateur enregistre = utilisateurRepository.save(compte);
+        affiliationService.affilier(enregistre, etablissementId, enregistre.getRole());
+        String jeton = jetonActivationService.creerJeton(enregistre);
+        emailService.envoyerInvitation(email, enregistre.getPrenom(), jeton);
+        return utilisateurService.convertiUtilisateurDto(enregistre);
+    }
+
+    /** Email normalisé (sans espaces, en minuscules). 409 s'il appartient déjà à un compte. */
+    private String emailLibre(String emailSaisi) {
+        String email = emailSaisi.trim().toLowerCase(Locale.ROOT);
         if (utilisateurRepository.existsByEmail(email)) {
             throw new ApplicationException(UtilisateurErreur.EMAIL_DEJA_UTILISE,
                     "Cet email appartient déjà à un compte");
         }
-
-        // 2. Le bon objet selon le rôle (refuse PATIENT et ADMINISTRATEUR)
-        Utilisateur personnel = creerSelonRole(dto);
-
-        // 3. Les champs communs
-        personnel.setNom(dto.getNom());
-        personnel.setPrenom(dto.getPrenom());
-        personnel.setEmail(email);
-        // Mot de passe aléatoire que personne ne connaît, en attendant l'activation.
-        personnel.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-        // Inactif : impossible de se connecter avant d'avoir choisi son mot de passe.
-        personnel.setActif(false);
-
-        // 4. Enregistrer, rattacher à l'établissement de l'administrateur, puis créer le jeton et envoyer l'email
-        Utilisateur enregistre = utilisateurRepository.save(personnel);
-        affiliationService.affilier(enregistre, etablissementId, enregistre.getRole());
-        String jeton = jetonActivationService.creerJeton(enregistre);
-        emailService.envoyerInvitation(email, enregistre.getPrenom(), jeton);
-
-        // 5. Réponse sans mot de passe
-        return utilisateurService.convertiUtilisateurDto(enregistre);
+        return email;
     }
 
     /**

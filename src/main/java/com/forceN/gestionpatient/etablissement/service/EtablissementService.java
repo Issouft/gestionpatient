@@ -52,6 +52,12 @@ public class EtablissementService {
         trouver(id).setActif(true);
     }
 
+    /** Pour les autres modules (ex. inviter un administrateur) : 404 si l'établissement n'existe pas. */
+    @Transactional(readOnly = true)
+    public void exigerExistant(Integer id) {
+        trouver(id);
+    }
+
     /** 404 si l'établissement n'existe pas. */
     Etablissement trouver(Integer id) {
         return etablissementRepository.findById(id)

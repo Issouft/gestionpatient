@@ -203,6 +203,7 @@ Avec Postman, par exemple, l'application démarrée.
 | `GET /etablissements` | Super-administrateur | Liste tous les établissements, actifs ou non, triés par nom |
 | `POST /etablissements/{id}/desactivation` | Super-administrateur | Désactive un établissement : tout son personnel perd l'accès tout de suite. Répond `204 No Content` |
 | `POST /etablissements/{id}/reactivation` | Super-administrateur | Réactive un établissement. Répond `204 No Content` |
+| `POST /etablissements/{id}/administrateurs` | Super-administrateur | Invite l'administrateur d'un établissement : compte inactif rattaché à l'établissement, lien d'activation par email. Répond `201 Created` |
 
 **1. S'inscrire :** `POST http://localhost:8081/auth/inscription`, avec ce corps en JSON (*Body → raw → JSON*) :
 
@@ -327,6 +328,29 @@ Le super-administrateur crée les établissements de la plateforme. Il voit leur
 - Tout son personnel perd l'accès à sa requête suivante (`401` avec le code `ACCES_ETABLISSEMENT_RETIRE`), et l'établissement n'est plus proposé à la connexion.
 - Ses données restent en base. `POST /etablissements/7/reactivation` le réactive, et son personnel retrouve l'accès.
 - `404` avec le code `ETABLISSEMENT_INTROUVABLE` : aucun établissement ne porte cet `id`.
+
+#### Créer l'administrateur d'un établissement
+
+C'est le super-administrateur qui invite l'administrateur d'un établissement. Comme pour le personnel, il ne choisit pas le mot de passe : la personne reçoit un email et le choisit elle-même.
+
+**1. Inviter l'administrateur :** `POST http://localhost:8081/etablissements/7/administrateurs` (7 est l'`id` de l'établissement), avec le jeton du super-administrateur (*Bearer Token*) :
+
+```json
+{
+  "nom": "Diop",
+  "prenom": "Awa",
+  "email": "une.adresse@dont-vous-lisez-les-emails.sn"
+}
+```
+
+- Réponse `201`, avec `"role": "ADMINISTRATEUR"` et `"actif": false` : le compte existe, mais il ne peut pas encore se connecter.
+- Le compte est rattaché à cet établissement. Un établissement peut avoir plusieurs administrateurs.
+- `409` avec le code `EMAIL_DEJA_UTILISE` : cet email a déjà un compte. Un compte n'a qu'un rôle : choisissez une autre adresse.
+- `404` avec le code `ETABLISSEMENT_INTROUVABLE` : aucun établissement ne porte cet `id`.
+
+**2. Activer le compte :** la personne ouvre le lien reçu par email et choisit son mot de passe. Pour tester sans navigateur : `POST /auth/activation` avec le jeton du lien et le mot de passe, comme pour le personnel (voir « Créer un membre du personnel »).
+
+**3. Se connecter :** `POST /auth/connexion`. S'il n'administre qu'un établissement, le jeton le désigne directement. Il peut alors gérer le personnel de cet établissement.
 
 #### Créer un membre du personnel
 
@@ -575,6 +599,8 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 - Le renvoi d'une invitation, avec un seul lien valide à la fois
 - La liste du personnel, sa suspension et sa réactivation par l'administrateur, dans son établissement seulement
 - La création du super-administrateur au démarrage : il choisit lui-même son mot de passe grâce à un lien envoyé par email
+- La gestion des établissements par le super-administrateur (création, liste, désactivation, réactivation), sans accès à leurs données
+- L'invitation de l'administrateur d'un établissement par le super-administrateur
 
 **Ce qui manque :**
 
