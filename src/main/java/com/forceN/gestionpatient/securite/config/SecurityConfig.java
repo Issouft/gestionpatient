@@ -41,6 +41,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/activation").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/mot-de-passe-oublie").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/reinitialisation").permitAll()
+                        // Annuaire public : un patient choisit sa clinique et son médecin avant d'avoir un compte.
+                        // Lecture seule, et seulement des fiches publiques (voir EtablissementPublicDto, MedecinPublicDto).
+                        .requestMatchers(HttpMethod.GET, "/annuaire/**").permitAll()
                         // Swagger : seulement la page et la description des routes (lecture).
                         // Les routes elles-mêmes restent protégées. Désactivable avec SWAGGER_ACTIF=false.
                         .requestMatchers(HttpMethod.GET, "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()

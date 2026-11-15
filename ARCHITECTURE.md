@@ -27,9 +27,10 @@ com.forceN.gestionpatient
 ├── etablissement                   ← socle SaaS : les établissements de la plateforme
 │   ├── entities   : Etablissement, Affiliation (tel compte a tel rôle dans tel établissement)
 │   ├── enums      : TypeEtablissement (CLINIQUE, CABINET, PHARMACIE, LABORATOIRE), StatutAffiliation
-│   ├── dto        : EtablissementDto, AccesEtablissementDto
+│   ├── dto        : EtablissementDto, AccesEtablissementDto, EtablissementPublicDto (fiche de l'annuaire)
 │   ├── exception  : EtablissementErreur
-│   ├── controller : EtablissementController (super-administrateur)
+│   ├── controller : EtablissementController (super-administrateur),
+│   │                AnnuaireEtablissementController (GET /annuaire/etablissements, public)
 │   ├── service    : EtablissementService, AffiliationService (où une personne peut travailler : utilisé par la sécurité)
 │   └── repository : EtablissementRepository, AffiliationRepository
 │
@@ -45,12 +46,12 @@ com.forceN.gestionpatient
 │
 ├── utilisateur                     ← Partie 1
 │   ├── entities : Utilisateur, Patient, Medecin, Secretaire, Pharmacien, Administrateur, SuperAdministrateur
-│   ├── dto      : UtilisateurDto, PatientDto, MedecinDto (réponses) ;
+│   ├── dto      : UtilisateurDto, PatientDto, MedecinDto, MedecinPublicDto (réponses) ;
 │   │              PatientInscriptionDto, PersonnelCreationDto, AdministrateurInvitationDto,
 │   │              ModificationProfilDto, ChangementMotDePasseDto (requêtes)
 │   ├── enums    : Role, Sexe
 │   ├── exception : UtilisateurErreur
-│   ├── controller : UtilisateurController, PersonnelController,
+│   ├── controller : UtilisateurController, PersonnelController, AnnuaireMedecinController (public),
 │   │                AdministrateurEtablissementController (POST /etablissements/{id}/administrateurs :
 │   │                ici et pas dans etablissement, car c'est ce module qui crée les comptes)
 │   ├── service

@@ -48,4 +48,18 @@ public interface AffiliationRepository extends JpaRepository<Affiliation, Intege
             order by u.nom, u.prenom
             """)
     List<Utilisateur> trouverComptes(Integer etablissementId, Collection<Role> roles);
+
+    /**
+     * Les comptes qui ont vraiment accès à l'établissement avec ce rôle : affiliation ACTIVE, compte actif
+     * (mot de passe choisi, pas désactivé) et établissement actif. Triés par nom puis prénom.
+     */
+    @Query("""
+            select u from Affiliation a join a.utilisateur u join a.etablissement e
+            where e.id = :etablissementId and e.actif = true
+              and a.role = :role
+              and a.statut = com.forceN.gestionpatient.etablissement.enums.StatutAffiliation.ACTIVE
+              and u.actif = true
+            order by u.nom, u.prenom, u.id
+            """)
+    List<Utilisateur> trouverComptesActifs(Integer etablissementId, Role role);
 }

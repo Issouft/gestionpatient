@@ -109,6 +109,16 @@ public class AffiliationService {
         return affiliationRepository.trouverComptes(etablissementId, roles);
     }
 
+    /**
+     * Les comptes en activité dans l'établissement avec ce rôle (ex. les médecins de l'annuaire), triés par nom.
+     * Sont exclus : les personnes suspendues, les comptes pas encore activés ou désactivés, et tout le monde
+     * si l'établissement est désactivé.
+     */
+    @Transactional(readOnly = true)
+    public List<Utilisateur> comptesActifsDe(Integer etablissementId, Role role) {
+        return affiliationRepository.trouverComptesActifs(etablissementId, role);
+    }
+
     /** Les rôles de la personne dans cet établissement. Vide si elle n'y a pas (ou plus) accès. */
     @Transactional(readOnly = true)
     public Set<Role> rolesDuPersonnel(Integer utilisateurId, Integer etablissementId) {

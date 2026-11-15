@@ -219,6 +219,8 @@ Les routes sont décrites ici. On peut les essayer avec Swagger (voir plus haut)
 | `POST /etablissements/{id}/desactivation` | Super-administrateur | Désactive un établissement : tout son personnel perd l'accès tout de suite. Répond `204 No Content` |
 | `POST /etablissements/{id}/reactivation` | Super-administrateur | Réactive un établissement. Répond `204 No Content` |
 | `POST /etablissements/{id}/administrateurs` | Super-administrateur | Invite l'administrateur d'un établissement : compte inactif rattaché à l'établissement, lien d'activation par email. Répond `201 Created` |
+| `GET /annuaire/etablissements` | Publique | Liste les établissements actifs, triés par nom. Filtres facultatifs : `?type=CLINIQUE&ville=Thiès` |
+| `GET /annuaire/etablissements/{id}/medecins` | Publique | Liste les médecins en activité de cet établissement : nom, prénom et spécialité. Filtre facultatif : `?specialite=Cardiologie` |
 
 **1. S'inscrire :** `POST http://localhost:8081/auth/inscription`, avec ce corps en JSON (*Body → raw → JSON*) :
 
@@ -312,6 +314,29 @@ Puis `POST http://localhost:8081/auth/reinitialisation`, sans jeton de connexion
 ```
 
 La réponse est `204`. Le lien ne marche qu'une fois, et seul le dernier lien demandé est valable. Comme pour un changement de mot de passe, les sessions ouvertes avant sont fermées. Un compte inactif ne reçoit pas de lien : un membre du personnel qui n'a pas encore activé son compte doit utiliser son invitation.
+
+#### Consulter l'annuaire (public)
+
+Avant même de créer son compte, un patient peut chercher une clinique et voir ses médecins. Ces routes marchent **sans jeton** (*No Auth* dans Postman).
+
+**1. Chercher un établissement :** `GET http://localhost:8081/annuaire/etablissements?ville=Thiès&type=CLINIQUE`
+
+- Les deux filtres sont facultatifs. La ville ne tient pas compte des majuscules.
+- `type` vaut `CLINIQUE`, `CABINET`, `PHARMACIE` ou `LABORATOIRE`. Une autre valeur donne `400` avec le code `PARAMETRE_INVALIDE`.
+- Seuls les établissements **actifs** apparaissent, avec leur fiche publique : nom, type, adresse, ville, téléphone et email de contact.
+
+**2. Voir ses médecins :** `GET http://localhost:8081/annuaire/etablissements/7/medecins?specialite=Cardiologie`
+
+```json
+[
+  { "id": 12, "nom": "Ndiaye", "prenom": "Fatou", "specialite": "Cardiologie" }
+]
+```
+
+- Le filtre `specialite` est facultatif, et ne tient pas compte des majuscules.
+- N'apparaissent que les médecins **en activité** : compte activé, et pas suspendus dans cet établissement.
+- **Données protégées :** ni email, ni numéro d'ordre, ni téléphone. Les secrétaires, pharmaciens et administrateurs n'apparaissent pas.
+- `404` avec le code `ETABLISSEMENT_INTROUVABLE` : l'établissement n'existe pas **ou** il est désactivé. La réponse est la même dans les deux cas.
 
 #### Gérer les établissements (super-administrateur)
 
@@ -695,6 +720,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 | Des `import` en rouge dans VS Code | L'éditeur n'a pas rechargé le projet | Lancez `Java: Clean Java Language Server Workspace` |
 | Réponse `401` | Il faut être connecté pour accéder à cette route, ou le jeton a expiré | Inscrivez-vous si besoin, connectez-vous, puis envoyez le jeton (voir « Essayer l'API ») |
 | Réponse `400` avec le code `DONNEES_INVALIDES` | Un champ manque ou est mal rempli | La liste `erreurs` de la réponse indique quel champ corriger |
+| Réponse `400` avec le code `PARAMETRE_INVALIDE` | Une valeur de l'adresse a un mauvais format : `/personnel/abc`, `?type=HOPITAL`... | Le message de la réponse indique le paramètre fautif et, si besoin, les valeurs possibles |
 | Réponse `409` avec le code `EMAIL_DEJA_UTILISE` | Un compte existe déjà avec cet email | Connectez-vous, ou choisissez un autre email |
 | Réponse `409` avec le code `NUMERO_ORDRE_DEJA_UTILISE` | Un autre médecin a déjà ce numéro d'ordre | Vérifiez le numéro d'ordre |
 | Réponse `409` avec le code `DONNEE_DEJA_UTILISEE` | La base a refusé une valeur déjà prise. Arrive surtout quand la même demande est envoyée deux fois en même temps (double clic) | Vérifiez si le compte n'a pas déjà été créé |
@@ -731,6 +757,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 - La création du super-administrateur au démarrage : il choisit lui-même son mot de passe grâce à un lien envoyé par email
 - La gestion des établissements par le super-administrateur (création, liste, désactivation, réactivation), sans accès à leurs données
 - L'invitation de l'administrateur d'un établissement par le super-administrateur
+- L'annuaire public : les établissements actifs et leurs médecins, consultables sans compte
 
 **Ce qui manque :**
 
