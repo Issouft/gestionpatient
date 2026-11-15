@@ -113,6 +113,7 @@ Le responsable d'une partie s'en occupe en priorité et connaît bien ses classe
 5. **Un DTO n'a pas d'annotation JPA** (`@Entity`, `@Column`, `@PrePersist`, etc.).
 6. **Un domaine peut utiliser les classes d'un autre.** `RendezVous` utilise `Patient`, par exemple, et c'est normal.
 7. **Avant de modifier une classe d'un autre domaine ou un fichier partagé, prévenez son responsable.** Les fichiers partagés sont notamment `commun`, `pom.xml` et `application.properties`.
+8. **Toute modification d'une table passe par une migration Flyway.** Une nouvelle entité ou un nouveau champ s'accompagne d'un fichier `V<numéro>__<description>.sql` dans `src/main/resources/db/migration`. Un fichier de migration déjà fusionné dans `main` ne se modifie jamais : on en ajoute un nouveau. Voir le README, « Modifier la base de données ».
 
 ## 6. Comment gérer une erreur
 

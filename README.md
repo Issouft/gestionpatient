@@ -77,7 +77,7 @@ Créez dans PostgreSQL une base vide nommée `gestionpatient`, avec l'utilisateu
 sudo -u postgres createdb gestionpatient
 ```
 
-Vous n'avez pas besoin de créer les tables : l'application s'en charge à son démarrage.
+Vous n'avez pas besoin de créer les tables : l'application s'en charge à son démarrage, avec Flyway (voir « Modifier la base de données »).
 
 ### Étape 3 : créer le fichier `.env`
 
@@ -148,6 +148,32 @@ Les tests vérifient automatiquement que le code fonctionne. PostgreSQL doit êt
 Si tout va bien, vous verrez `BUILD SUCCESS`. Une longue trace d'erreur peut s'afficher pendant les tests : c'est normal, car l'un d'eux simule volontairement une panne.
 
 Les tests ne modifient pas votre base : chacun est annulé à la fin. Ils n'envoient pas non plus d'emails : l'envoi est remplacé par un faux pendant les tests.
+
+### Modifier la base de données
+
+Les tables sont créées et modifiées par **Flyway**, à partir des fichiers SQL du dossier `src/main/resources/db/migration`. Chaque fichier est une **migration** : une étape numérotée de l'évolution de la base.
+
+Au démarrage, Flyway regarde dans la table `flyway_schema_history` les migrations déjà appliquées à votre base, puis applique les nouvelles, dans l'ordre. Tout le monde a donc la même base, et le serveur aussi le jour de la mise en ligne. Hibernate, lui, ne crée plus rien : il vérifie seulement que les entités correspondent aux tables (`ddl-auto=validate`).
+
+**Ajouter une table ou une colonne :**
+
+1. Modifiez l'entité Java, comme avant.
+2. Créez dans `src/main/resources/db/migration` un fichier qui porte le numéro suivant. Par exemple, si le dernier est `V3__...sql`, créez `V4__ajouter_telephone_medecin.sql`, avec **deux** `_` après le numéro.
+3. Écrivez-y le SQL de la modification :
+
+   ```sql
+   alter table medecin add column telephone varchar(255);
+   ```
+
+4. Redémarrez l'application. La console affiche `Successfully applied 1 migration`.
+
+**Les règles :**
+
+- **Ne modifiez jamais une migration déjà fusionnée dans `main`.** Elle a déjà été appliquée chez les autres, et Flyway refuse de démarrer si son contenu change. Pour corriger, ajoutez une nouvelle migration.
+- **Deux personnes ne prennent pas le même numéro.** Avant d'ouvrir votre PR, faites `git pull` et vérifiez que votre numéro est toujours libre. S'il est pris, renommez votre fichier.
+- **Une migration par changement**, avec un nom qui dit ce qu'elle fait.
+
+`V1__schema_initial.sql` décrit la base telle qu'elle était avant Flyway. Si votre base existait déjà, Flyway ne le rejoue pas : il la marque simplement « version 1 », sans toucher à vos données.
 
 ### Essayer l'API
 
@@ -459,6 +485,9 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 | Réponse `400` avec le code `MOT_DE_PASSE_INCORRECT` | L'ancien mot de passe envoyé pour en changer est faux | Vérifiez l'ancien mot de passe. Ce n'est pas un `401` : la session est toujours valable |
 | Réponse `400` avec le code `JETON_INVALIDE` | Le lien reçu par email (invitation ou mot de passe oublié) est faux, a expiré ou a déjà servi | Copiez le lien du **dernier** email reçu, avec un clic droit plutôt qu'à la main. S'il a expiré : pour une invitation, l'administrateur peut la renvoyer (voir « Créer un membre du personnel », étape 4) ; pour un mot de passe oublié, refaites la demande |
 | `cannot find symbol` sur `MEDECIN`, ou `incompatible types` avec `Role` | VS Code a importé une autre classe `Role` : `javax.management.relation.Role` | Remplacez l'import par `com.forceN.gestionpatient.utilisateur.enums.Role` |
+| `Schema-validation: missing table` ou `missing column` | Une entité a une table ou un champ qu'aucune migration ne crée | Ajoutez une migration (voir « Modifier la base de données ») |
+| `Schema-validation: wrong column type` | Le type d'un champ Java ne correspond pas à la colonne | Corrigez l'entité, ou ajoutez une migration qui change la colonne |
+| `Validate failed: Migrations have failed validation` | Une migration déjà appliquée a été modifiée | Annulez la modification du fichier (`git restore`), puis mettez votre changement dans une nouvelle migration |
 | `'url' attribute is not specified` après un redémarrage automatique | Un `clean` a vidé le dossier `target` pendant que l'application tournait | Arrêtez l'application, puis relancez-la. Ne lancez pas `clean` pendant qu'elle tourne |
 
 ## 5. Où en est le projet
