@@ -26,10 +26,15 @@ const CARTES_PAR_ROLE: Partial<Record<Role, CarteAccueil[]>> = {
     { icone: 'event_available', titre: 'Mes rendez-vous', texte: 'Prenez et suivez vos rendez-vous.' },
   ],
   ADMINISTRATEUR: [
-    { icone: 'groups', titre: 'Personnel', texte: 'Invitez, suspendez et réactivez votre équipe.' },
+    { icone: 'groups', titre: 'Personnel', texte: 'Invitez, suspendez et réactivez votre équipe.', lien: '/personnel' },
   ],
   SUPER_ADMINISTRATEUR: [
-    { icone: 'domain', titre: 'Établissements', texte: 'Créez les établissements et invitez leurs administrateurs.' },
+    {
+      icone: 'domain',
+      titre: 'Établissements',
+      texte: 'Créez les établissements et invitez leurs administrateurs.',
+      lien: '/etablissements',
+    },
   ],
 };
 

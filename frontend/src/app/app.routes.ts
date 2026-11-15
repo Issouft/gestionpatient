@@ -73,6 +73,18 @@ export const routes: Routes = [
     loadComponent: () => import('./features/patient/mes-cliniques/mes-cliniques').then((m) => m.MesCliniques),
   },
   {
+    path: 'personnel',
+    title: 'Personnel · GestionPatient',
+    canActivate: [connecteGuard, roleGuard('ADMINISTRATEUR')],
+    loadComponent: () => import('./features/personnel/personnel').then((m) => m.Personnel),
+  },
+  {
+    path: 'etablissements',
+    title: 'Établissements · GestionPatient',
+    canActivate: [connecteGuard, roleGuard('SUPER_ADMINISTRATEUR')],
+    loadComponent: () => import('./features/etablissements/etablissements').then((m) => m.Etablissements),
+  },
+  {
     path: 'accueil',
     title: 'Accueil · GestionPatient',
     canActivate: [connecteGuard],

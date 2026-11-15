@@ -6,6 +6,10 @@
         <h1 class="page-titre">{{ moi.prenom }} {{ moi.nom }}</h1>
         <span class="etiquette"><mat-icon>badge</mat-icon>{{ libelleRole() }}</span>
       </div>
+      <div class="actions-profil">
+        <button mat-stroked-button (click)="modifier()"><mat-icon>edit</mat-icon> Modifier</button>
+        <button mat-stroked-button (click)="changerMotDePasse()"><mat-icon>key</mat-icon> Mot de passe</button>
+      </div>
     </div>
 
     <h2 class="titre-section">Mes informations</h2>

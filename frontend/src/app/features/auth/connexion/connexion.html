@@ -5,6 +5,12 @@
       Votre session est terminée. Connectez-vous à nouveau.
     </p>
   }
+  @if (motDePasseChange()) {
+    <p class="message message-info" role="status">
+      <mat-icon>check_circle</mat-icon>
+      Votre mot de passe est changé. Par sécurité, toutes vos sessions ont été fermées : connectez-vous avec le nouveau.
+    </p>
+  }
   @if (erreur(); as message) {
     <p class="message message-erreur" role="alert">
       <mat-icon>error_outline</mat-icon>

@@ -47,7 +47,13 @@ export interface Profil {
   // Médecin
   specialite?: string;
   numeroOrdre?: string;
+  // Liste du personnel (GET /personnel) : statut de la personne DANS l'établissement de l'administrateur.
+  statutDansEtablissement?: 'ACTIVE' | 'SUSPENDUE';
 }
+
+/** Les rôles que l'administrateur peut inviter (PersonnelService.ROLES_PERSONNEL en Java). */
+export type RolePersonnel = 'MEDECIN' | 'SECRETAIRE' | 'PHARMACIEN';
+export const ROLES_PERSONNEL: RolePersonnel[] = ['MEDECIN', 'SECRETAIRE', 'PHARMACIEN'];
 
 /** Les rôles qui n'ont jamais d'établissement à choisir (comme Role.agitSansEtablissement() en Java). */
 export function agitSansEtablissement(role: Role): boolean {

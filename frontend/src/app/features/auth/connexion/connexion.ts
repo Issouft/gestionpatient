@@ -38,6 +38,8 @@ export class Connexion {
   /** ?raison=session-terminee : mis par l'intercepteur quand le backend a refusé le jeton (401). */
   readonly raison = input<string>();
   readonly sessionTerminee = computed(() => this.raison() === 'session-terminee');
+  /** ?raison=mot-de-passe-change : après un changement de mot de passe, toutes les sessions sont fermées. */
+  readonly motDePasseChange = computed(() => this.raison() === 'mot-de-passe-change');
 
   readonly enCours = signal(false);
   readonly erreur = signal<string | null>(null);

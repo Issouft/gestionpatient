@@ -1,9 +1,16 @@
 import { formatDate } from '@angular/common';
 import { Component, LOCALE_ID, computed, inject } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
+import { filter } from 'rxjs';
 
 import { SessionService } from '../../../core/auth/session.service';
 import { LIBELLES_ROLES, Profil } from '../../../core/modeles/compte';
+import { ChangementMotDePasseDialogue } from '../changement-mot-de-passe/changement-mot-de-passe';
+import { ModificationProfilDialogue } from '../modification-profil/modification-profil';
 
 /** Une information du profil, affichée en tuile. */
 interface Information {
@@ -15,17 +22,22 @@ interface Information {
 /**
  * Le profil de la personne connectée (GET /utilisateurs/moi, déjà chargé par la session).
  * Affiche les champs propres au patient ou au médecin quand ils existent. Jamais de mot de passe.
+ * Permet de modifier ses informations et de changer son mot de passe.
  */
 @Component({
   selector: 'app-mon-profil',
-  imports: [MatIconModule],
+  imports: [MatIconModule, MatButtonModule],
   templateUrl: './mon-profil.html',
   styleUrl: './mon-profil.scss',
 })
 export class MonProfil {
   private readonly locale = inject(LOCALE_ID);
+  private readonly session = inject(SessionService);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly router = inject(Router);
 
-  readonly profil = inject(SessionService).profil;
+  readonly profil = this.session.profil;
 
   readonly libelleRole = computed(() => {
     const role = this.profil()?.role;
@@ -42,6 +54,26 @@ export class MonProfil {
     const profil = this.profil();
     return profil ? this.construire(profil) : [];
   });
+
+  modifier(): void {
+    this.dialog
+      .open(ModificationProfilDialogue, { autoFocus: 'first-tabbable' })
+      .afterClosed()
+      .pipe(filter((profil) => !!profil))
+      .subscribe(() => this.snackBar.open('Vos informations sont enregistrées.', 'OK', { duration: 4000 }));
+  }
+
+  changerMotDePasse(): void {
+    this.dialog
+      .open(ChangementMotDePasseDialogue, { autoFocus: 'first-tabbable' })
+      .afterClosed()
+      .pipe(filter((fait) => fait === true))
+      .subscribe(() => {
+        // Le backend a fermé toutes les sessions, celle-ci comprise : on se reconnecte.
+        this.session.deconnecter();
+        this.router.navigate(['/connexion'], { queryParams: { raison: 'mot-de-passe-change' } });
+      });
+  }
 
   private construire(profil: Profil): Information[] {
     const infos: Information[] = [{ icone: 'mail_outline', libelle: 'Email', valeur: profil.email }];

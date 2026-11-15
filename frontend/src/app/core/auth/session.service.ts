@@ -90,6 +90,11 @@ export class SessionService {
       .pipe(tap((profil) => this.profilCharge.set(profil)));
   }
 
+  /** Après une modification du profil (PUT /utilisateurs/moi) : tous les écrans affichent le nouveau nom. */
+  mettreAJourProfil(profil: Profil): void {
+    this.profilCharge.set(profil);
+  }
+
   /**
    * Au démarrage de l'application : si un jeton est resté dans l'onglet, on recharge le profil.
    * S'il a expiré ou a été révoqué, on repart sans session. Ne bloque jamais le démarrage.

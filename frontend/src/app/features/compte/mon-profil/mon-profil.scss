@@ -67,3 +67,21 @@
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+
+.actions-profil {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+@media (max-width: 600px) {
+  .entete {
+    flex-wrap: wrap;
+  }
+
+  .actions-profil {
+    margin-left: 0;
+    width: 100%;
+  }
+}

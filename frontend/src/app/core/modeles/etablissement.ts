@@ -36,3 +36,8 @@ export interface MedecinPublic {
   prenom: string;
   specialite: string | null;
 }
+
+/** etablissement/dto/EtablissementDto.java : la fiche complète, vue par le super-administrateur (avec « actif »). */
+export interface Etablissement extends EtablissementPublic {
+  actif: boolean;
+}

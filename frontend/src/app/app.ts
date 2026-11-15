@@ -31,6 +31,8 @@ export class App {
   readonly etablissement = this.session.etablissementCourant;
   readonly plusieursEtablissements = computed(() => this.session.etablissements().length > 1);
   readonly estPatient = computed(() => this.profil()?.role === 'PATIENT');
+  readonly estAdministrateur = computed(() => this.profil()?.role === 'ADMINISTRATEUR');
+  readonly estSuperAdministrateur = computed(() => this.profil()?.role === 'SUPER_ADMINISTRATEUR');
 
   /** Vrai sur les pages d'accès (connexion, inscription...), qui n'ont ni barre ni pied de page. */
   readonly pleinEcran = toSignal(

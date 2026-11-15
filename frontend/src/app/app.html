@@ -14,6 +14,16 @@
           <mat-icon>local_hospital</mat-icon><span>Mes cliniques</span>
         </a>
       }
+      @if (estAdministrateur()) {
+        <a class="lien-nav" routerLink="/personnel" routerLinkActive="actif">
+          <mat-icon>groups</mat-icon><span>Personnel</span>
+        </a>
+      }
+      @if (estSuperAdministrateur()) {
+        <a class="lien-nav" routerLink="/etablissements" routerLinkActive="actif">
+          <mat-icon>domain</mat-icon><span>Établissements</span>
+        </a>
+      }
     </nav>
 
     <span class="espace"></span>

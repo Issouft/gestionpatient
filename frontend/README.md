@@ -32,7 +32,10 @@ src/app
 │   ├── api/                    ← les SEULS endroits qui connaissent les adresses du backend
 │   │   ├── annuaire.service.ts      ← GET /annuaire/** (public)
 │   │   ├── compte-public.service.ts ← inscription, activation, mot de passe oublié, réinitialisation
-│   │   └── patient.service.ts       ← les cliniques du patient (rejoindre, mes cliniques)
+│   │   ├── patient.service.ts       ← les cliniques du patient (rejoindre, mes cliniques)
+│   │   ├── mon-compte.service.ts    ← modifier son profil, changer son mot de passe
+│   │   ├── personnel.service.ts     ← le personnel de l'établissement (administrateur)
+│   │   └── etablissements.service.ts← les établissements de la plateforme (super-administrateur)
 │   ├── auth/
 │   │   ├── session.service.ts  ← qui est connecté : jeton, profil, établissement de travail
 │   │   ├── jeton.interceptor.ts← ajoute le jeton à chaque requête vers l'API ; un 401 ferme la session
@@ -47,13 +50,16 @@ src/app
 ├── shared/                     ← composants réutilisables par plusieurs écrans
 │   ├── page-acces/             ← mise en page des pages d'accès : vitrine à gauche, contenu à droite
 │   ├── bouton-visibilite/      ← bouton « œil » pour afficher un mot de passe
-│   └── carte-etablissement/    ← un établissement en carte cliquable (annuaire, mes cliniques)
+│   ├── carte-etablissement/    ← un établissement en carte cliquable (annuaire, mes cliniques)
+│   └── confirmation/           ← boîte « Êtes-vous sûr ? » avant une action sensible
 ├── features/                   ← un dossier par domaine, comme le backend
 │   ├── auth/                   ← connexion, inscription, activation, mot de passe oublié, choix de l'établissement
 │   ├── annuaire/               ← annuaire public et fiche d'un établissement avec ses médecins
 │   ├── patient/                ← mes cliniques
+│   ├── personnel/              ← le personnel de l'établissement (administrateur)
+│   ├── etablissements/         ← les établissements de la plateforme (super-administrateur)
 │   ├── accueil/
-│   └── compte/                 ← mon profil
+│   └── compte/                 ← mon profil, modification du profil, changement de mot de passe
 ├── app.routes.ts               ← les pages de l'application
 ├── app.config.ts               ← intercepteur, routeur, langue française...
 └── app.ts / app.html           ← la barre du haut, commune à tous les écrans
@@ -85,9 +91,19 @@ src/app
 | `/mes-cliniques` | Patient | Les cliniques qu'il a rejointes |
 | `/choix-etablissement` | Personnel | Choisir ou changer l'établissement de la session |
 | `/accueil` | Connecté | Les écrans du rôle, sous forme de cartes |
-| `/profil` | Connecté | Mon profil |
+| `/profil` | Connecté | Mon profil. Modifier ses informations (téléphone et adresse pour un patient) et changer son mot de passe, ce qui ferme toutes les sessions |
+| `/personnel` | Administrateur | Le personnel de son établissement : inviter (médecin avec spécialité et numéro d'ordre), renvoyer une invitation, suspendre, réactiver |
+| `/etablissements` | Super-administrateur | Les établissements : créer, désactiver, réactiver, inviter leur administrateur. Seulement leur fiche, jamais leurs données |
 
 Les adresses `/activation` et `/reinitialisation` doivent rester celles des propriétés `application.url-activation` et `application.url-reinitialisation` du backend : ce sont elles qui sont dans les emails.
+
+## Ajouter un écran
+
+1. Le service d'API dans `core/api/` (et les types dans `core/modeles/` s'ils manquent).
+2. Le composant dans `features/<domaine>/`, avec son test `*.spec.ts` à côté.
+3. La route dans `app.routes.ts`, avec `connecteGuard` et `roleGuard('ROLE')` si la page est réservée.
+4. Si besoin, la carte de l'accueil (`features/accueil/accueil.ts`) et le lien de la barre du haut (`app.html`).
+5. Une ligne dans le tableau « Les pages » ci-dessus.
 
 ## La sécurité de la session
 

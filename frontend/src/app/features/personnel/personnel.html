@@ -1,0 +1,75 @@
+<section class="page">
+  <div class="tete-page">
+    <div>
+      <h1 class="page-titre">Personnel</h1>
+      <p class="sous-titre">
+        L'équipe de {{ etablissement()?.etablissementNom ?? 'votre établissement' }} :
+        {{ compteurs().actifs }} actif(s), {{ compteurs().attente }} en attente, {{ compteurs().suspendus }} suspendu(s).
+      </p>
+    </div>
+    <button mat-flat-button class="bouton-marque" (click)="inviter()">
+      <mat-icon>person_add</mat-icon> Inviter un membre
+    </button>
+  </div>
+
+  <div class="barre-outils">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Rechercher</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" placeholder="Nom ou email" />
+    </mat-form-field>
+    <mat-button-toggle-group [value]="roleFiltre()" (change)="roleFiltre.set($event.value)" aria-label="Filtrer par rôle" [hideSingleSelectionIndicator]="true">
+      <mat-button-toggle value="">Tous</mat-button-toggle>
+      @for (role of roles; track role) {
+        <mat-button-toggle [value]="role">{{ libellesRoles[role] }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+  </div>
+
+  @if (chargement()) {
+    <div class="etat-page"><mat-progress-spinner mode="indeterminate" diameter="40" /></div>
+  } @else if (erreur(); as message) {
+    <p class="message message-erreur" role="alert"><mat-icon>error_outline</mat-icon>{{ message }}</p>
+  } @else if (membres().length === 0) {
+    <div class="etat-page">
+      <span class="pastille"><mat-icon>groups</mat-icon></span>
+      <h2>Votre équipe est vide</h2>
+      <p>Invitez vos médecins, secrétaires et pharmaciens : chacun recevra un email pour activer son compte.</p>
+      <button mat-flat-button class="bouton-marque" (click)="inviter()">Inviter un membre</button>
+    </div>
+  } @else if (membresAffiches().length === 0) {
+    <div class="etat-page">
+      <span class="pastille"><mat-icon>search_off</mat-icon></span>
+      <p>Personne ne correspond à cette recherche.</p>
+    </div>
+  } @else {
+    <div class="liste-gestion">
+      @for (membre of membresAffiches(); track membre.id) {
+        @let statut = statutDe(membre);
+        <div class="ligne-gestion">
+          <span class="avatar-ligne">{{ initiales(membre) }}</span>
+          <div class="infos">
+            <strong>{{ membre.prenom }} {{ membre.nom }}</strong>
+            <span>
+              {{ libellesRoles[membre.role] }}@if (membre.specialite) { · {{ membre.specialite }}} · {{ membre.email }}
+            </span>
+          </div>
+          <span class="statut" [class]="'statut statut-' + statut">{{ libellesStatuts[statut] }}</span>
+          <button mat-icon-button [matMenuTriggerFor]="actions" [disabled]="actionEnCours() === membre.id" [attr.aria-label]="'Actions pour ' + membre.prenom + ' ' + membre.nom">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #actions="matMenu" xPosition="before">
+            @if (statut === 'attente') {
+              <button mat-menu-item (click)="renvoyerInvitation(membre)"><mat-icon>forward_to_inbox</mat-icon>Renvoyer l'invitation</button>
+            }
+            @if (statut === 'suspendu') {
+              <button mat-menu-item (click)="reactiver(membre)"><mat-icon>lock_open</mat-icon>Réactiver</button>
+            } @else {
+              <button mat-menu-item (click)="suspendre(membre)"><mat-icon>block</mat-icon>Suspendre</button>
+            }
+          </mat-menu>
+        </div>
+      }
+    </div>
+  }
+</section>
