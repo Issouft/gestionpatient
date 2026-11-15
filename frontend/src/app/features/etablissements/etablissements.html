@@ -54,6 +54,7 @@
             <mat-icon>more_vert</mat-icon>
           </button>
           <mat-menu #actions="matMenu" xPosition="before">
+            <button mat-menu-item (click)="modifier(etab)"><mat-icon>edit</mat-icon>Modifier la fiche</button>
             <button mat-menu-item (click)="inviterAdministrateur(etab)"><mat-icon>person_add</mat-icon>Inviter l'administrateur</button>
             @if (etab.actif) {
               <button mat-menu-item (click)="desactiver(etab)"><mat-icon>block</mat-icon>Désactiver</button>

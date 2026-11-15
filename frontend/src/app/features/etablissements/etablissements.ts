@@ -88,6 +88,17 @@ export class Etablissements {
       });
   }
 
+  modifier(etab: Etablissement): void {
+    this.dialog
+      .open(CreationEtablissementDialogue, { data: etab, autoFocus: 'first-tabbable' })
+      .afterClosed()
+      .pipe(filter((modifie): modifie is Etablissement => !!modifie))
+      .subscribe((modifie) => {
+        this.snackBar.open(`La fiche de ${modifie.nom} est enregistrée.`, 'OK', { duration: 4000 });
+        this.charger();
+      });
+  }
+
   inviterAdministrateur(etab: Etablissement): void {
     this.dialog
       .open(InvitationAdministrateurDialogue, { data: etab, autoFocus: 'first-tabbable' })

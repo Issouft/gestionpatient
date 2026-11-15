@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -73,6 +74,32 @@ class EtablissementGestionTest {
         mockMvc.perform(get("/etablissements").header("Authorization", "Bearer " + jetonSuperAdmin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].id", hasItem(id)));
+    }
+
+    @Test
+    void leSuperAdministrateurModifieLaFicheSansChangerLEtat() throws Exception {
+        Etablissement clinique = sessions.creerClinique("Clinique A");
+        changerEtat(clinique.getId(), "desactivation").andExpect(status().isNoContent());
+
+        mockMvc.perform(put("/etablissements/" + clinique.getId())
+                        .header("Authorization", "Bearer " + jetonSuperAdmin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nom":" Clinique A rénovée ","type":"CABINET","ville":"Mbour","telephone":"  ","actif":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nom").value("Clinique A rénovée"))
+                .andExpect(jsonPath("$.type").value("CABINET"))
+                .andExpect(jsonPath("$.ville").value("Mbour"))
+                .andExpect(jsonPath("$.telephone").value(nullValue()))
+                .andExpect(jsonPath("$.actif").value(false)); // « actif » envoyé est ignoré : il a ses propres routes
+
+        mockMvc.perform(put("/etablissements/999999999")
+                        .header("Authorization", "Bearer " + jetonSuperAdmin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nom\":\"X\",\"type\":\"CLINIQUE\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ETABLISSEMENT_INTROUVABLE"));
     }
 
     @Test

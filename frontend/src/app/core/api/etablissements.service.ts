@@ -40,6 +40,11 @@ export class EtablissementsService {
     return this.http.post<Etablissement>(this.url, etablissement);
   }
 
+  /** Modifie la fiche (mêmes champs et règles qu'à la création). Ne change pas « actif ». */
+  modifier(id: number, etablissement: NouvelEtablissement): Observable<Etablissement> {
+    return this.http.put<Etablissement>(`${this.url}/${id}`, etablissement);
+  }
+
   /** Tout son personnel perd l'accès tout de suite. Les données restent en base. */
   desactiver(id: number): Observable<void> {
     return this.http.post<void>(`${this.url}/${id}/desactivation`, null);

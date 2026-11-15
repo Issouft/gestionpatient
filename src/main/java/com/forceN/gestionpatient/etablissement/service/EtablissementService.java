@@ -32,6 +32,14 @@ public class EtablissementService {
         return EtablissementDto.fromEntity(etablissementRepository.save(dto.toEntity()));
     }
 
+    /** Modifie la fiche d'un établissement (nom, type, adresse, contact). 404 s'il n'existe pas. */
+    @Transactional
+    public EtablissementDto modifier(Integer id, EtablissementDto dto) {
+        Etablissement etablissement = trouver(id);
+        dto.appliquerA(etablissement);
+        return EtablissementDto.fromEntity(etablissement);
+    }
+
     /** Tous les établissements, actifs ou non, triés par nom. */
     @Transactional(readOnly = true)
     public List<EtablissementDto> lister() {

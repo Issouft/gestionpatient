@@ -65,14 +65,22 @@ public class EtablissementDto {
 
     /** DTO → entité, textes nettoyés (espaces autour retirés, vides → null). L'établissement est créé actif. */
     public Etablissement toEntity() {
-        return Etablissement.builder()
-                .nom(nom.trim())
-                .type(type)
-                .adresse(nettoyer(adresse))
-                .ville(nettoyer(ville))
-                .telephone(nettoyer(telephone))
-                .email(email == null || email.isBlank() ? null : email.trim().toLowerCase(Locale.ROOT))
-                .build();
+        Etablissement etablissement = new Etablissement();
+        appliquerA(etablissement);
+        return etablissement;
+    }
+
+    /**
+     * Recopie la fiche dans un établissement existant (modification), avec le même nettoyage qu'à la création.
+     * Ne touche ni à l'id ni à « actif » : désactiver a ses propres routes.
+     */
+    public void appliquerA(Etablissement etablissement) {
+        etablissement.setNom(nom.trim());
+        etablissement.setType(type);
+        etablissement.setAdresse(nettoyer(adresse));
+        etablissement.setVille(nettoyer(ville));
+        etablissement.setTelephone(nettoyer(telephone));
+        etablissement.setEmail(email == null || email.isBlank() ? null : email.trim().toLowerCase(Locale.ROOT));
     }
 
     private static String nettoyer(String texte) {
