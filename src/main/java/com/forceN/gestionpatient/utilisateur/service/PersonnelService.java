@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.forceN.gestionpatient.commun.exception.ApplicationException;
+import com.forceN.gestionpatient.etablissement.service.AffiliationService;
+import com.forceN.gestionpatient.securite.exception.SecuriteErreur;
 import com.forceN.gestionpatient.securite.service.EmailService;
 import com.forceN.gestionpatient.securite.service.JetonActivationService;
 import com.forceN.gestionpatient.utilisateur.dto.PersonnelCreationDto;
@@ -26,7 +28,11 @@ import com.forceN.gestionpatient.utilisateur.repository.UtilisateurRepository;
 
 import lombok.RequiredArgsConstructor;
 
-/** Gestion du personnel (médecin, secrétaire, pharmacien) par l'administrateur : création, invitation, liste, désactivation. */
+/**
+ * Gestion du personnel (médecin, secrétaire, pharmacien) par l'administrateur : création, invitation, liste, désactivation.
+ * Tout se limite à l'établissement de l'administrateur (celui de son jeton) : il ne voit ni ne touche
+ * le personnel des autres établissements.
+ */
 @Service
 @RequiredArgsConstructor
 public class PersonnelService {
@@ -40,6 +46,7 @@ public class PersonnelService {
     private final JetonActivationService jetonActivationService;
     private final EmailService emailService;
     private final UtilisateurService utilisateurService;
+    private final AffiliationService affiliationService;
 
     /**
      * Crée un compte inactif pour un membre du personnel et lui envoie le lien d'activation.
@@ -47,7 +54,8 @@ public class PersonnelService {
      */
     // Tout ou rien : si l'email ne part pas, le compte et le jeton sont annulés.
     @Transactional
-    public UtilisateurDto creer(PersonnelCreationDto dto) {
+    public UtilisateurDto creer(PersonnelCreationDto dto, Integer etablissementId) {
+        exigerEtablissement(etablissementId);
         // 1. Email normalisé + refus s'il est déjà pris
         String email = dto.getEmail().trim().toLowerCase(Locale.ROOT);
         if (utilisateurRepository.existsByEmail(email)) {
@@ -67,8 +75,9 @@ public class PersonnelService {
         // Inactif : impossible de se connecter avant d'avoir choisi son mot de passe.
         personnel.setActif(false);
 
-        // 4. Enregistrer, puis créer le jeton et envoyer l'email
+        // 4. Enregistrer, rattacher à l'établissement de l'administrateur, puis créer le jeton et envoyer l'email
         Utilisateur enregistre = utilisateurRepository.save(personnel);
+        affiliationService.affilier(enregistre, etablissementId, enregistre.getRole());
         String jeton = jetonActivationService.creerJeton(enregistre);
         emailService.envoyerInvitation(email, enregistre.getPrenom(), jeton);
 
@@ -81,11 +90,9 @@ public class PersonnelService {
      * L'ancien lien ne marche plus : un seul lien valide à la fois.
      */
     @Transactional
-    public void renvoyerInvitation(Integer id) {
-        // 1. Retrouver le compte, sinon 404
-        Utilisateur utilisateur = utilisateurRepository.findById(id)
-                .orElseThrow(() -> new ApplicationException(UtilisateurErreur.UTILISATEUR_INTROUVABLE,
-                        "Aucun compte ne porte cet identifiant"));
+    public void renvoyerInvitation(Integer id, Integer etablissementId) {
+        // 1. Retrouver le membre du personnel de cet établissement, sinon 404
+        Utilisateur utilisateur = trouverPersonnel(id, etablissementId);
 
         // 2. Refuser si le compte est déjà actif (409)
         if (utilisateur.isActif()) {
@@ -97,10 +104,11 @@ public class PersonnelService {
         emailService.envoyerInvitation(utilisateur.getEmail(), utilisateur.getPrenom(), jeton);
     }
 
-    /** Liste le personnel (médecins, secrétaires, pharmaciens), actif ou non, trié par nom. */
+    /** Liste le personnel de l'établissement (médecins, secrétaires, pharmaciens), actif ou non, trié par nom. */
     @Transactional(readOnly = true)
-    public List<UtilisateurDto> lister() {
-        return utilisateurRepository.findByRoleInOrderByNomAscPrenomAsc(ROLES_PERSONNEL).stream()
+    public List<UtilisateurDto> lister(Integer etablissementId) {
+        exigerEtablissement(etablissementId);
+        return affiliationService.comptesDe(etablissementId, ROLES_PERSONNEL).stream()
                 .map(utilisateurService::convertiUtilisateurDto)
                 .toList();
     }
@@ -111,19 +119,35 @@ public class PersonnelService {
      * Pour le réactiver, l'administrateur lui renvoie une invitation : la personne choisit un nouveau mot de passe.
      */
     @Transactional
-    public void desactiver(Integer id) {
-        Utilisateur utilisateur = trouverPersonnel(id);
+    public void desactiver(Integer id, Integer etablissementId) {
+        Utilisateur utilisateur = trouverPersonnel(id, etablissementId);
         utilisateur.setActif(false);
         // Un lien encore valable (invitation ou mot de passe oublié) ne doit pas pouvoir le réactiver.
         jetonActivationService.annulerJetons(utilisateur);
     }
 
-    /** Retrouve un membre du personnel. 404 aussi pour un patient ou un administrateur : ils ne sont pas gérés ici. */
-    private Utilisateur trouverPersonnel(Integer id) {
+    /**
+     * Retrouve un membre du personnel de cet établissement. Même réponse 404 pour un id inconnu, un patient,
+     * un administrateur ou le personnel d'un autre établissement : on ne révèle pas qui existe ailleurs.
+     */
+    private Utilisateur trouverPersonnel(Integer id, Integer etablissementId) {
+        exigerEtablissement(etablissementId);
         return utilisateurRepository.findById(id)
                 .filter(utilisateur -> ROLES_PERSONNEL.contains(utilisateur.getRole()))
+                .filter(utilisateur -> affiliationService.faitPartieDe(utilisateur.getId(), etablissementId, ROLES_PERSONNEL))
                 .orElseThrow(() -> new ApplicationException(UtilisateurErreur.UTILISATEUR_INTROUVABLE,
-                        "Aucun membre du personnel ne porte cet identifiant"));
+                        "Aucun membre du personnel de votre établissement ne porte cet identifiant"));
+    }
+
+    /**
+     * Sécurité en plus : la permission PERSONNEL_GERER n'est donnée qu'avec un établissement dans le jeton,
+     * donc ce cas ne devrait jamais arriver. S'il arrive, on refuse plutôt que d'agir sur tous les établissements.
+     */
+    private void exigerEtablissement(Integer etablissementId) {
+        if (etablissementId == null) {
+            throw new ApplicationException(SecuriteErreur.ETABLISSEMENT_NON_CHOISI,
+                    "Choisissez d'abord l'établissement où vous travaillez : POST /auth/etablissement.");
+        }
     }
 
     /** Crée l'objet qui correspond au rôle demandé. Refuse PATIENT et ADMINISTRATEUR. */

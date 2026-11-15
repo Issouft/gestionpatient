@@ -10,6 +10,8 @@ import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import com.forceN.gestionpatient.etablissement.service.AffiliationService;
+import com.forceN.gestionpatient.etablissement.service.EtablissementService;
 import com.forceN.gestionpatient.securite.service.EmailService;
 import com.forceN.gestionpatient.securite.service.JetonActivationService;
 import com.forceN.gestionpatient.utilisateur.entities.Administrateur;
@@ -25,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
  * Sans lui, personne ne pourrait créer le personnel.
  * Seul son email est dans .env : le compte est créé inactif et l'administrateur reçoit un lien
  * pour choisir lui-même son mot de passe. Les développeurs ne le connaissent donc jamais.
+ * Il est rattaché au plus ancien établissement, ou à une « Clinique principale » créée sur une base neuve.
+ * (Solution d'attente : le super-administrateur créera les établissements et invitera leurs administrateurs.)
  */
 @Slf4j
 @Component
@@ -35,6 +39,8 @@ public class AdministrateurInitial implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final JetonActivationService jetonActivationService;
     private final EmailService emailService;
+    private final AffiliationService affiliationService;
+    private final EtablissementService etablissementService;
 
     // Le ":" donne une valeur par défaut (vide) : l'application démarre même si .env ne la contient pas.
     @Value("${administrateur.email:}")
@@ -61,6 +67,9 @@ public class AdministrateurInitial implements CommandLineRunner {
             administrateur = creerAdministrateur();
         }
 
+        // Sans établissement, l'administrateur n'aurait aucune permission (voir AffiliationService).
+        // Ne fait rien s'il est déjà rattaché.
+        affiliationService.affilier(administrateur, etablissementService.etablissementParDefaut(), Role.ADMINISTRATEUR);
         envoyerLien(administrateur);
     }
 

@@ -120,6 +120,8 @@ Pour `spring.mail.password`, n'utilisez pas votre mot de passe Gmail habituel, m
 
 Au premier démarrage, s'il n'existe aucun administrateur, l'application en crée un avec l'email de `.env`. Son compte est **inactif**, et il reçoit un email avec un lien pour choisir **lui-même** son mot de passe. Ainsi, aucun mot de passe d'administrateur n'est écrit dans un fichier, et les développeurs ne le connaissent pas.
 
+Il est rattaché au plus ancien établissement de la base. Sur une base neuve, une « Clinique principale » est créée pour lui. Le personnel qu'il crée ensuite sera rattaché à cet établissement.
+
 - Le lien se termine par `?jeton=...`. Comme pour le personnel, envoyez ce jeton et le mot de passe choisi à `POST /auth/activation` (voir « Créer un membre du personnel », étape 3).
 - Lien perdu ou expiré ? Redémarrez l'application : tant que l'administrateur n'a pas activé son compte, un nouveau lien part à chaque démarrage. L'ancien ne marche plus.
 - Si l'email ne part pas, l'application démarre quand même, avec un avertissement dans la console.
@@ -189,10 +191,10 @@ Avec Postman, par exemple, l'application démarrée.
 | `PUT /utilisateurs/moi/mot-de-passe` | Avec jeton | Change le mot de passe de la personne connectée, après vérification de l'ancien. Répond `204 No Content` |
 | `POST /auth/mot-de-passe-oublie` | Publique | Envoie par email un lien valable 1 h pour choisir un nouveau mot de passe. Répond toujours `204 No Content`, même si l'email n'a pas de compte |
 | `POST /auth/reinitialisation` | Publique | Change le mot de passe avec le jeton du lien. Répond `204 No Content` |
-| `POST /personnel` | Administrateur | Crée un médecin, une secrétaire ou un pharmacien, puis lui envoie un lien d'activation. Répond `201 Created` |
+| `POST /personnel` | Administrateur | Crée un médecin, une secrétaire ou un pharmacien dans l'établissement de l'administrateur, puis lui envoie un lien d'activation. Répond `201 Created` |
 | `POST /auth/activation` | Publique | Active un compte avec le jeton du lien et le mot de passe choisi. Répond `204 No Content` |
 | `POST /personnel/{id}/invitation` | Administrateur | Envoie un nouveau lien d'activation à une personne qui n'a pas encore activé son compte, ou dont le compte a été désactivé. L'ancien lien ne marche plus. Répond `204 No Content` |
-| `GET /personnel` | Administrateur | Liste les médecins, secrétaires et pharmaciens, actifs ou non, triés par nom |
+| `GET /personnel` | Administrateur | Liste les médecins, secrétaires et pharmaciens de son établissement, actifs ou non, triés par nom |
 | `POST /personnel/{id}/desactivation` | Administrateur | Désactive le compte d'un membre du personnel : il ne peut plus se connecter, et son jeton actuel est refusé tout de suite. Répond `204 No Content` |
 
 **1. S'inscrire :** `POST http://localhost:8081/auth/inscription`, avec ce corps en JSON (*Body → raw → JSON*) :
@@ -292,6 +294,8 @@ La réponse est `204`. Le lien ne marche qu'une fois, et seul le dernier lien de
 
 Le personnel ne s'inscrit pas lui-même : c'est l'administrateur qui crée son compte. L'administrateur ne choisit pas le mot de passe. La personne reçoit un email et choisit elle-même son mot de passe, que personne d'autre ne connaît.
 
+**Tout se passe dans l'établissement de l'administrateur**, celui de son jeton. La personne créée y est rattachée automatiquement. L'administrateur ne voit ni ne touche le personnel des autres établissements : pour lui, il n'existe pas (`404`).
+
 **1. Se connecter en administrateur :** `POST /auth/connexion` avec l'email de l'administrateur et le mot de passe qu'il a choisi (voir « Le premier administrateur »). Copiez le jeton.
 
 **2. Créer le compte :** `POST http://localhost:8081/personnel`, avec le jeton de l'administrateur (*Bearer Token*) :
@@ -327,15 +331,15 @@ La réponse `204` n'a pas de corps : c'est normal. Le lien est valable 48 heures
 
 - `204` : un nouvel email est parti. **Seul le dernier lien marche** : les anciens sont désactivés, pour qu'il n'y ait jamais deux liens valides en même temps.
 - `409` avec le code `COMPTE_DEJA_ACTIF` : la personne a déjà activé son compte, aucun email n'est envoyé.
-- `404` avec le code `UTILISATEUR_INTROUVABLE` : aucun compte ne porte cet `id`.
+- `404` avec le code `UTILISATEUR_INTROUVABLE` : aucun membre du personnel de votre établissement ne porte cet `id`.
 
-**5. Lister le personnel :** `GET http://localhost:8081/personnel`, avec le jeton de l'administrateur. Le champ `actif` de chaque compte indique s'il peut se connecter.
+**5. Lister le personnel :** `GET http://localhost:8081/personnel`, avec le jeton de l'administrateur. Seul le personnel de son établissement apparaît. Le champ `actif` de chaque compte indique s'il peut se connecter.
 
 **6. Désactiver un compte :** `POST http://localhost:8081/personnel/51/desactivation`, avec le jeton de l'administrateur et **sans corps**. Réponse `204`, même si le compte était déjà inactif.
 
 - La personne ne peut plus se connecter, et le jeton qu'elle utilisait est refusé (`401`) dès sa requête suivante.
 - Les liens qu'elle avait reçus (invitation, mot de passe oublié) ne marchent plus, et « mot de passe oublié » ne lui envoie rien.
-- `404` si l'`id` n'est pas celui d'un médecin, d'une secrétaire ou d'un pharmacien : un patient ou un administrateur ne se désactive pas ici.
+- `404` si l'`id` n'est pas celui d'un médecin, d'une secrétaire ou d'un pharmacien de votre établissement : un patient, un administrateur ou le personnel d'un autre établissement ne se désactive pas ici.
 
 **Réactiver un compte :** renvoyez l'invitation (étape 4). La personne choisit un nouveau mot de passe avec le lien, et son compte redevient actif.
 

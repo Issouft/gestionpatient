@@ -1,5 +1,6 @@
 package com.forceN.gestionpatient.utilisateur;
 
+import com.forceN.gestionpatient.etablissement.entities.Etablissement;
 import com.forceN.gestionpatient.outils.SessionsDeTest;
 import com.forceN.gestionpatient.securite.jwt.JwtService;
 import com.forceN.gestionpatient.securite.service.EmailService;
@@ -158,7 +159,8 @@ class CompteTest {
     void unCompteDesactivePerdSonAccesToutDeSuite() throws Exception {
         String jetonAdmin = jetonAdministrateur();
         Utilisateur secretaire = creer(Secretaire.builder().email("secretaire.compte@test.invalid"));
-        String jetonSecretaire = jwtService.genererJeton(secretaire.getEmail());
+        // La secrétaire travaille dans la même clinique que l'administrateur.
+        String jetonSecretaire = sessions.jeton(secretaire, clinique);
 
         mockMvc.perform(post("/personnel/" + secretaire.getId() + "/desactivation")
                         .header("Authorization", "Bearer " + jetonAdmin))
@@ -187,10 +189,14 @@ class CompteTest {
 
     // ---------- Outils ----------
 
+    // La clinique de l'administrateur de test (créée par jetonAdministrateur).
+    private Etablissement clinique;
+
     /** Crée un administrateur affilié à une clinique de test, et le jeton qu'il recevrait en se connectant. */
     private String jetonAdministrateur() {
         Utilisateur admin = creer(Administrateur.builder().email("admin.compte@test.invalid"));
-        return sessions.jeton(admin, sessions.creerClinique("Clinique Compte Test"));
+        clinique = sessions.creerClinique("Clinique Compte Test");
+        return sessions.jeton(admin, clinique);
     }
 
     /** Enregistre un compte actif avec le mot de passe MOT_DE_PASSE. Le rôle est fixé par @PrePersist. */

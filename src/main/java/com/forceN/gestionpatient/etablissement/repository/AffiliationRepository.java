@@ -2,10 +2,12 @@ package com.forceN.gestionpatient.etablissement.repository;
 
 import com.forceN.gestionpatient.etablissement.entities.Affiliation;
 import com.forceN.gestionpatient.etablissement.enums.StatutAffiliation;
+import com.forceN.gestionpatient.utilisateur.entities.Utilisateur;
 import com.forceN.gestionpatient.utilisateur.enums.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface AffiliationRepository extends JpaRepository<Affiliation, Integer> {
@@ -27,4 +29,16 @@ public interface AffiliationRepository extends JpaRepository<Affiliation, Intege
             order by e.nom, e.id
             """)
     List<Affiliation> trouverAccesActifs(Integer utilisateurId);
+
+    // Vrai si la personne fait partie de l'établissement avec l'un de ces rôles, quel que soit le statut.
+    boolean existsByUtilisateurIdAndEtablissementIdAndRoleIn(Integer utilisateurId, Integer etablissementId,
+            Collection<Role> roles);
+
+    /** Les comptes rattachés à un établissement avec l'un de ces rôles, triés par nom puis prénom. */
+    @Query("""
+            select distinct u from Affiliation a join a.utilisateur u
+            where a.etablissement.id = :etablissementId and a.role in :roles
+            order by u.nom, u.prenom
+            """)
+    List<Utilisateur> trouverComptes(Integer etablissementId, Collection<Role> roles);
 }
