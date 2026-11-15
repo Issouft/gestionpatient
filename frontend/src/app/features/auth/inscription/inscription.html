@@ -1,0 +1,163 @@
+<app-page-acces
+  titre="Créer mon compte patient"
+  intro="Quelques informations, et vous pourrez rejoindre votre clinique et suivre vos soins."
+  [large]="true"
+>
+  @if (erreur(); as message) {
+    <p class="message message-erreur" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      {{ message }}
+    </p>
+  }
+
+  <form class="formulaire-acces" [formGroup]="formulaire" (ngSubmit)="sInscrire()" novalidate>
+    <h2 class="etape-formulaire"><mat-icon>person_outline</mat-icon> Vous</h2>
+
+    <div class="ligne-champs">
+      <mat-form-field appearance="outline">
+        <mat-label>Prénom</mat-label>
+        <input matInput formControlName="prenom" autocomplete="given-name" />
+        @if (formulaire.controls.prenom.hasError('required')) {
+          <mat-error>Le prénom est obligatoire</mat-error>
+        } @else if (formulaire.controls.prenom.hasError('serveur')) {
+          <mat-error>{{ formulaire.controls.prenom.getError('serveur') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Nom</mat-label>
+        <input matInput formControlName="nom" autocomplete="family-name" />
+        @if (formulaire.controls.nom.hasError('required')) {
+          <mat-error>Le nom est obligatoire</mat-error>
+        } @else if (formulaire.controls.nom.hasError('serveur')) {
+          <mat-error>{{ formulaire.controls.nom.getError('serveur') }}</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="ligne-champs">
+      <mat-form-field appearance="outline">
+        <mat-label>Date de naissance</mat-label>
+        <input matInput type="date" formControlName="dateNaissance" [max]="dateMax" autocomplete="bday" />
+        @if (formulaire.controls.dateNaissance.hasError('required')) {
+          <mat-error>La date de naissance est obligatoire</mat-error>
+        } @else if (formulaire.controls.dateNaissance.hasError('datePasseeAttendue')) {
+          <mat-error>La date de naissance doit être dans le passé</mat-error>
+        } @else if (formulaire.controls.dateNaissance.hasError('serveur')) {
+          <mat-error>{{ formulaire.controls.dateNaissance.getError('serveur') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <div class="champ-sexe">
+        <span class="libelle-champ">Sexe</span>
+        <mat-button-toggle-group formControlName="sexe" aria-label="Sexe" [hideSingleSelectionIndicator]="true">
+          <mat-button-toggle value="FEMININ">Féminin</mat-button-toggle>
+          <mat-button-toggle value="MASCULIN">Masculin</mat-button-toggle>
+        </mat-button-toggle-group>
+        @if (formulaire.controls.sexe.touched && formulaire.controls.sexe.invalid) {
+          <span class="erreur-champ" role="alert">Le sexe est obligatoire</span>
+        }
+      </div>
+    </div>
+
+    <div class="ligne-champs">
+      <mat-form-field appearance="outline">
+        <mat-label>Téléphone</mat-label>
+        <mat-icon matPrefix>phone</mat-icon>
+        <input matInput type="tel" formControlName="telephone" autocomplete="tel" placeholder="77 123 45 67" />
+        @if (formulaire.controls.telephone.hasError('required')) {
+          <mat-error>Le téléphone est obligatoire</mat-error>
+        } @else if (formulaire.controls.telephone.hasError('pattern')) {
+          <mat-error>Chiffres, espaces et « + » seulement</mat-error>
+        } @else if (formulaire.controls.telephone.hasError('serveur')) {
+          <mat-error>{{ formulaire.controls.telephone.getError('serveur') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Adresse</mat-label>
+        <mat-icon matPrefix>home</mat-icon>
+        <input matInput formControlName="adresse" autocomplete="street-address" />
+        @if (formulaire.controls.adresse.hasError('required')) {
+          <mat-error>L'adresse est obligatoire</mat-error>
+        } @else if (formulaire.controls.adresse.hasError('serveur')) {
+          <mat-error>{{ formulaire.controls.adresse.getError('serveur') }}</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <h2 class="etape-formulaire"><mat-icon>lock_outline</mat-icon> Votre accès</h2>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Email</mat-label>
+      <mat-icon matPrefix>mail_outline</mat-icon>
+      <input matInput type="email" formControlName="email" autocomplete="email" placeholder="nom@exemple.sn" />
+      @if (formulaire.controls.email.hasError('required')) {
+        <mat-error>L'email est obligatoire</mat-error>
+      } @else if (formulaire.controls.email.hasError('email')) {
+        <mat-error>Le format de l'email est invalide</mat-error>
+      } @else if (formulaire.controls.email.hasError('serveur')) {
+        <mat-error>{{ formulaire.controls.email.getError('serveur') }}</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="ligne-champs">
+      <mat-form-field appearance="outline">
+        <mat-label>Mot de passe</mat-label>
+        <input matInput #champMdp type="password" formControlName="motDePasse" autocomplete="new-password" />
+        <app-bouton-visibilite matSuffix [champ]="champMdp" />
+        <mat-hint>8 caractères minimum</mat-hint>
+        @if (formulaire.controls.motDePasse.hasError('required')) {
+          <mat-error>Le mot de passe est obligatoire</mat-error>
+        } @else if (formulaire.controls.motDePasse.hasError('minlength') || formulaire.controls.motDePasse.hasError('maxlength')) {
+          <mat-error>Entre 8 et 72 caractères</mat-error>
+        } @else if (formulaire.controls.motDePasse.hasError('serveur')) {
+          <mat-error>{{ formulaire.controls.motDePasse.getError('serveur') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Confirmation</mat-label>
+        <input matInput #champConfirmation type="password" formControlName="confirmation" autocomplete="new-password" />
+        <app-bouton-visibilite matSuffix [champ]="champConfirmation" />
+        @if (formulaire.controls.confirmation.hasError('required')) {
+          <mat-error>Confirmez le mot de passe</mat-error>
+        } @else if (formulaire.controls.confirmation.hasError('differents')) {
+          <mat-error>Les deux mots de passe sont différents</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <h2 class="etape-formulaire"><mat-icon>local_hospital</mat-icon> Votre clinique <span class="facultatif">facultatif</span></h2>
+
+    <mat-form-field appearance="outline" class="champ-clinique">
+      <mat-label>Clinique</mat-label>
+      <mat-select formControlName="etablissementId">
+        <mat-option [value]="null">Je choisirai plus tard</mat-option>
+        @for (etab of etablissements(); track etab.id) {
+          <mat-option [value]="etab.id">
+            {{ etab.nom }}
+            <span class="option-detail">· {{ libellesTypes[etab.type] }}@if (etab.ville) {, {{ etab.ville }}}</span>
+          </mat-option>
+        }
+      </mat-select>
+      <mat-hint>Elle pourra voir vos rendez-vous et votre dossier.</mat-hint>
+      @if (formulaire.controls.etablissementId.hasError('serveur')) {
+        <mat-error>{{ formulaire.controls.etablissementId.getError('serveur') }}</mat-error>
+      }
+    </mat-form-field>
+
+    <button mat-flat-button type="submit" class="bouton-envoi bouton-marque" [disabled]="enCours()">
+      @if (enCours()) {
+        <mat-progress-spinner mode="indeterminate" diameter="22" />
+      } @else {
+        Créer mon compte
+      }
+    </button>
+  </form>
+
+  <p class="lien-bas">
+    Déjà un compte ?
+    <a routerLink="/connexion">Se connecter</a>
+  </p>
+</app-page-acces>

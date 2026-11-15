@@ -371,6 +371,7 @@ input:-webkit-autofill:focus {
   h1 {
     font-size: 1.85rem;
     font-weight: 800;
+    line-height: 1.2;
     margin-bottom: 10px;
   }
 }
@@ -395,6 +396,20 @@ input:-webkit-autofill:focus {
   &:hover {
     box-shadow: 0 12px 28px rgb(11 93 143 / 36%);
     transform: translateY(-1px);
+  }
+}
+
+.acces-contenu.acces-contenu-large {
+  max-width: 560px;
+}
+
+// Sur un long formulaire, la vitrine reste visible pendant qu'on fait défiler.
+.acces-vitrine {
+  @media (min-width: 901px) {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    box-sizing: border-box;
   }
 }
 
@@ -460,4 +475,184 @@ input:-webkit-autofill:focus {
     animation: none !important;
     transition: none !important;
   }
+}
+
+// ---------- Formulaires des pages d'accès ----------
+
+.formulaire-acces {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  mat-form-field mat-icon[matPrefix] {
+    margin: 0 4px 0 12px;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+// Deux champs côte à côte (nom et prénom...), l'un sous l'autre sur téléphone.
+.ligne-champs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 12px;
+  // Chaque champ garde sa hauteur (sinon il s'étire à la hauteur de son voisin).
+  align-items: start;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bouton-envoi {
+  width: 100%;
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+
+  mat-progress-spinner {
+    --mat-progress-spinner-active-indicator-color: currentColor;
+    margin: 0 auto;
+  }
+}
+
+.lien-droite {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 8px;
+  font: var(--mat-sys-label-large);
+}
+
+.lien-bas {
+  margin: 28px 0 0;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+
+  a {
+    font-weight: 600;
+    margin-left: 4px;
+  }
+}
+
+.lien-droite a,
+.lien-bas a {
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Résultat d'une action (compte créé, email envoyé...) : grande icône et texte centré.
+.resultat {
+  text-align: center;
+  padding: 8px 0;
+
+  .resultat-icone {
+    display: inline-grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    margin-bottom: 16px;
+    background: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
+
+    mat-icon {
+      font-size: 36px;
+      width: 36px;
+      height: 36px;
+    }
+
+    &.resultat-erreur {
+      background: var(--mat-sys-error-container);
+      color: var(--mat-sys-on-error-container);
+    }
+  }
+
+  h2 {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+  }
+
+  p {
+    color: var(--mat-sys-on-surface-variant);
+    line-height: 1.5;
+    margin: 0 0 24px;
+  }
+}
+
+// Titre d'une partie d'un long formulaire (inscription).
+.etape-formulaire {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--mat-sys-primary);
+
+  &:first-child {
+    margin-top: 0;
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .facultatif {
+    font: var(--mat-sys-label-medium);
+    color: var(--mat-sys-on-surface-variant);
+    font-weight: 400;
+  }
+}
+
+// Choix à boutons (sexe) aligné avec les champs Material.
+.champ-sexe {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 22px;
+
+  mat-button-toggle-group {
+    --mat-button-toggle-shape: 12px;
+    height: 56px;
+    align-items: center;
+  }
+
+  mat-button-toggle {
+    flex: 1;
+  }
+}
+
+.libelle-champ {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Libellé posé sur le bord du cadre, comme le libellé flottant d'un champ Material.
+.champ-sexe .libelle-champ {
+  position: absolute;
+  top: -8px;
+  left: 12px;
+  z-index: 1;
+  padding: 0 4px;
+  background: var(--mat-sys-surface-container-lowest);
+}
+
+.erreur-champ {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-error);
+  padding-left: 16px;
+}
+
+.option-detail {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.9em;
+}
+
+.champ-clinique {
+  margin-bottom: 24px;
 }

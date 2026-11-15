@@ -1,0 +1,60 @@
+<div class="acces">
+  <!-- Vitrine : présente la plateforme (cachée sur téléphone et tablette). -->
+  <aside class="acces-vitrine" aria-hidden="true">
+    <span class="logo">
+      <span class="logo-icone"><mat-icon>health_and_safety</mat-icon></span>
+      GestionPatient
+    </span>
+
+    <div class="acces-accroche">
+      <h2>Vos soins, simplement réunis.</h2>
+      <p>Une seule plateforme pour les patients, les médecins et les cliniques.</p>
+
+      <ul class="acces-atouts">
+        <li>
+          <span class="pastille-verre"><mat-icon>travel_explore</mat-icon></span>
+          <div>
+            <strong>Trouvez votre clinique</strong>
+            <span>Et les spécialistes qui y consultent</span>
+          </div>
+        </li>
+        <li>
+          <span class="pastille-verre"><mat-icon>event_available</mat-icon></span>
+          <div>
+            <strong>Prenez rendez-vous</strong>
+            <span>Sans attente au téléphone</span>
+          </div>
+        </li>
+        <li>
+          <span class="pastille-verre"><mat-icon>monitor_heart</mat-icon></span>
+          <div>
+            <strong>Suivez vos soins</strong>
+            <span>Consultations et ordonnances au même endroit</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <p class="acces-confiance">
+      <mat-icon>verified_user</mat-icon>
+      Vos données de santé restent dans votre clinique.
+    </p>
+  </aside>
+
+  <section class="acces-zone">
+    <div class="acces-contenu" [class.acces-contenu-large]="large()">
+      <span class="logo logo-mobile">
+        <span class="logo-icone"><mat-icon>health_and_safety</mat-icon></span>
+        GestionPatient
+      </span>
+      <h1>{{ titre() }}</h1>
+      @if (intro(); as texte) {
+        <p class="acces-intro">{{ texte }}</p>
+      }
+
+      <ng-content />
+
+      <p class="acces-pied">© GestionPatient · Données protégées et accès sécurisé</p>
+    </div>
+  </section>
+</div>

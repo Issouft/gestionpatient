@@ -455,7 +455,7 @@ Le personnel ne s'inscrit pas lui-même : c'est l'administrateur qui crée son c
 
 Le compte est créé **inactif** : il ne peut pas encore se connecter. Un email est envoyé à l'adresse indiquée. Regardez aussi dans les spams. Notez l'`id` de la réponse : il sert à renvoyer l'invitation (étape 4).
 
-**3. Activer le compte :** le lien de l'email mène à la page d'activation du frontend, qui n'existe pas encore (elle arrive à l'étape suivante du frontend). Faites un clic droit sur le lien, puis *Copier l'adresse du lien*, et gardez tout ce qui suit `jeton=`. Ne recopiez pas le jeton à la main : des caractères comme `I`, `l` et `1` se confondent facilement. Puis envoyez `POST http://localhost:8081/auth/activation`, **sans jeton** (*No Auth*) :
+**3. Activer le compte :** le plus simple est d'ouvrir le lien de l'email, le frontend étant démarré (voir « Démarrer le frontend ») : la page d'activation demande le mot de passe et sa confirmation. Pour tester sans le frontend, faites un clic droit sur le lien, puis *Copier l'adresse du lien*, et gardez tout ce qui suit `jeton=`. Ne recopiez pas le jeton à la main : des caractères comme `I`, `l` et `1` se confondent facilement. Puis envoyez `POST http://localhost:8081/auth/activation`, **sans jeton** (*No Auth*) :
 
 ```json
 {

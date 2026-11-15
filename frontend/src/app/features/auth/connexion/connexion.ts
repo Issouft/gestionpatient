@@ -9,6 +9,8 @@ import { Router, RouterLink } from '@angular/router';
 
 import { SessionService } from '../../../core/auth/session.service';
 import { messageErreur } from '../../../core/erreurs/message-erreur';
+import { BoutonVisibilite } from '../../../shared/bouton-visibilite/bouton-visibilite';
+import { PageAcces } from '../../../shared/page-acces/page-acces';
 
 /**
  * Écran de connexion (POST /auth/connexion).
@@ -19,6 +21,8 @@ import { messageErreur } from '../../../core/erreurs/message-erreur';
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    PageAcces,
+    BoutonVisibilite,
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
@@ -26,7 +30,6 @@ import { messageErreur } from '../../../core/erreurs/message-erreur';
     MatProgressSpinnerModule,
   ],
   templateUrl: './connexion.html',
-  styleUrl: './connexion.scss',
 })
 export class Connexion {
   private readonly session = inject(SessionService);
@@ -37,7 +40,6 @@ export class Connexion {
   readonly sessionTerminee = computed(() => this.raison() === 'session-terminee');
 
   readonly enCours = signal(false);
-  readonly motDePasseVisible = signal(false);
   readonly erreur = signal<string | null>(null);
 
   readonly formulaire = inject(NonNullableFormBuilder).group({
