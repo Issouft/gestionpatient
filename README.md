@@ -296,63 +296,22 @@ La réponse `204` n'a pas de corps : c'est normal. Le lien est valable 48 heures
 
 #### Le parcours médical (Partie 3)
 
-Toutes ces routes demandent un jeton. Avec le jeton d'un autre rôle, la réponse est `403`.
+Cette partie suit le patient après son rendez-vous : le médecin le consulte, rédige une ordonnance, puis le patient demande ses médicaments au pharmacien. L'administrateur peut ensuite générer des rapports.
 
-| Route | Accès | Ce qu'elle fait |
+Toutes ces routes demandent un jeton (*Bearer Token*). **Chaque étape indique avec quel compte se connecter.** Avec le jeton d'un autre rôle, la réponse est `403`.
+
+**Avant de commencer, il vous faut quatre comptes actifs :**
+
+| Compte | Comment l'obtenir | Où trouver son `id` |
 |---|---|---|
-| `POST /dossiers` | Secrétaire | Crée le dossier d'un patient. Un seul dossier par patient. Répond `201 Created` |
-| `GET /dossiers/{id}` | Secrétaire, médecin | Renvoie un dossier, avec ses consultations, les plus récentes d'abord |
-| `GET /dossiers/patient/{patientId}` | Secrétaire, médecin | Renvoie le dossier d'un patient, à partir de l'id du patient |
-| `POST /consultations` | Médecin | Enregistre la consultation d'un de **ses** rendez-vous confirmés. Elle s'ajoute au dossier du patient, et le rendez-vous passe à `TERMINE`. Répond `201 Created` |
-| `GET /consultations/{id}` | Médecin | Renvoie une consultation |
-| `POST /consultations/{id}/ordonnance` | Médecin | Rédige l'ordonnance d'une consultation. Seul le médecin de la consultation peut le faire, une seule fois. Répond `201 Created` |
-| `GET /consultations/{id}/ordonnance` | Médecin, pharmacien | Renvoie l'ordonnance d'une consultation |
-| `GET /ordonnances/{id}` | Médecin, pharmacien | Renvoie une ordonnance |
-| `POST /medicaments` | Pharmacien | Ajoute un médicament avec son stock de départ. Répond `201 Created` |
-| `GET /medicaments` | Avec jeton | Liste les médicaments, avec leur stock et s'ils sont sous le seuil d'alerte |
-| `POST /demandes` | Patient | Demande si une quantité d'un médicament est disponible. Répond `201 Created` |
-| `GET /demandes/moi` | Patient | Liste ses demandes, avec la réponse du pharmacien |
-| `GET /demandes?statut=EN_ATTENTE` | Pharmacien | Liste les demandes à traiter. Sans `statut`, liste toutes les demandes |
-| `POST /demandes/{id}/validation` | Pharmacien | Le produit est disponible. Refusé (`409 STOCK_INSUFFISANT`) si le stock ne suffit pas |
-| `POST /demandes/{id}/refus` | Pharmacien | Le produit n'est pas disponible |
-| `POST /demandes/{id}/retrait` | Pharmacien | Le patient a pris le produit : **le stock baisse** de la quantité demandée |
-| `POST /rapports` | Administrateur | Génère un rapport sur une période. Répond `201 Created` |
-| `GET /rapports` | Administrateur | Liste les rapports, les plus récents d'abord |
+| Un patient | `POST /auth/inscription` (voir « Essayer l'API », étape 1) | Le champ `id` de la réponse, ou `GET /utilisateurs/moi` avec son jeton |
+| Un médecin | `POST /personnel` avec `"role": "MEDECIN"`, puis activation (voir « Créer un membre du personnel ») | Le champ `id` de la réponse, ou `GET /personnel` avec le jeton de l'administrateur |
+| Une secrétaire | Pareil, avec `"role": "SECRETAIRE"` | Pas besoin : elle est reconnue grâce à son jeton |
+| Un pharmacien | Pareil, avec `"role": "PHARMACIEN"` | Pas besoin : il est reconnu grâce à son jeton |
 
-**1. Créer le dossier (secrétaire) :** `POST /dossiers`. Les antécédents sont facultatifs.
+Connectez chaque compte avec `POST /auth/connexion` et gardez les quatre jetons sous la main. Dans les exemples ci-dessous, le patient a l'`id` `12` et le médecin l'`id` `5` : **remplacez-les par vos propres `id`.**
 
-```json
-{
-  "patientId": 12,
-  "antecedents": "Asthme"
-}
-```
-
-**2. Consulter (médecin) :** `POST /consultations`. Le rendez-vous doit être `CONFIRME`, appartenir au médecin connecté, et le patient doit déjà avoir un dossier.
-
-```json
-{
-  "rendezVousId": 7,
-  "observations": "Fièvre depuis 2 jours",
-  "diagnostic": "Grippe"
-}
-```
-
-La Partie 2 n'a pas encore de routes pour créer un rendez-vous. Pour essayer, ajoutez une ligne dans la table `rendez_vous` avec le statut `CONFIRME`.
-
-**3. Rédiger l'ordonnance (médecin) :** `POST /consultations/{id}/ordonnance`, avec au moins un médicament :
-
-```json
-{
-  "lignes": [
-    { "medicamentId": 3, "quantite": 2, "posologie": "1 comprimé matin et soir", "dureeJours": 5 }
-  ]
-}
-```
-
-Prescrire ne change pas le stock.
-
-**4. Ajouter un médicament (pharmacien) :** `POST /medicaments`. Le stock n'est donné qu'à la création. Ensuite, il baisse tout seul à chaque retrait confirmé.
+**1. Ajouter un médicament** (jeton du **pharmacien**) : `POST http://localhost:8081/medicaments`
 
 ```json
 {
@@ -363,11 +322,133 @@ Prescrire ne change pas le stock.
 }
 ```
 
-**5. Demander un médicament (patient) :** `POST /demandes`, avec `{"medicamentId": 3, "quantite": 2}`. La demande est `EN_ATTENTE`.
+- Tous les champs sont obligatoires. `stock` et `seuilAlerte` ne peuvent pas être négatifs.
+- Le stock n'est donné **qu'à la création**. Il n'y a pas de route pour le modifier : il baisse tout seul à chaque retrait confirmé (étape 6).
+- Réponse `201`. Notez l'`id` du médicament : il sert aux étapes 5 et 6.
+- `409 MEDICAMENT_DEJA_EXISTANT` : un médicament avec le même nom et le même dosage existe déjà (majuscules et minuscules ne comptent pas).
 
-Le pharmacien répond avec `POST /demandes/{id}/validation` ou `POST /demandes/{id}/refus`. Le corps est facultatif : `{"reponse": "Passez demain matin"}`. Sans corps, un message par défaut est enregistré. Quand le patient vient chercher le produit, le pharmacien envoie `POST /demandes/{id}/retrait`, sans corps : le stock baisse, et `dateRetrait` est rempli. Un retrait ne se confirme qu'une fois.
+Pour revoir les médicaments : `GET http://localhost:8081/medicaments`, avec **n'importe quel jeton**. Chaque médicament indique son stock, `disponible` (stock supérieur à 0) et `sousSeuilAlerte` (stock inférieur ou égal au seuil).
 
-**6. Générer un rapport (administrateur) :** `POST /rapports`. Les deux dates sont incluses. `type` vaut `ACTIVITE_MEDICALE`, `RENDEZ_VOUS` ou `STOCK_MEDICAMENTS`.
+**2. Créer le dossier du patient** (jeton de la **secrétaire**) : `POST http://localhost:8081/dossiers`
+
+```json
+{
+  "patientId": 12,
+  "antecedents": "Asthme"
+}
+```
+
+- `antecedents` est facultatif.
+- Réponse `201`. Le dossier contient le nom du patient et la liste de ses consultations, vide pour l'instant.
+- `404 PATIENT_INTROUVABLE` : aucun patient ne porte cet `id`. L'`id` d'un médecin ou d'une secrétaire ne marche pas.
+- `409 DOSSIER_DEJA_EXISTANT` : un patient n'a qu'un seul dossier. Relisez-le avec `GET /dossiers/patient/12`.
+
+**3. Créer un rendez-vous confirmé** (dans la base, pas dans Postman)
+
+La Partie 2 n'a pas encore de route pour créer un rendez-vous. En attendant, ajoutez-le directement dans PostgreSQL. Ouvrez la base :
+
+```bash
+sudo -u postgres psql gestionpatient
+```
+
+Puis collez cette commande, avec **vos** `id` de patient et de médecin :
+
+```sql
+INSERT INTO rendez_vous (creation_date, last_modified_date, date_heure, motif, statut_rendez_vous, patient_id, medecin_id)
+VALUES (now(), now(), now(), 'Fièvre', 'CONFIRME', 12, 5)
+RETURNING id;
+```
+
+PostgreSQL affiche l'`id` du rendez-vous : notez-le. Tapez `\q` pour quitter.
+
+- `ERROR: ... violates foreign key constraint` : l'`id` du patient ou du médecin n'existe pas, ou n'a pas le bon rôle.
+
+**4. Consulter le patient** (jeton du **médecin** du rendez-vous) : `POST http://localhost:8081/consultations`
+
+```json
+{
+  "rendezVousId": 7,
+  "observations": "Fièvre depuis 2 jours",
+  "diagnostic": "Grippe"
+}
+```
+
+- `observations` et `diagnostic` sont obligatoires.
+- Réponse `201`. La consultation s'ajoute au dossier du patient, et le rendez-vous passe à `TERMINE`. Notez l'`id` de la consultation : il sert à l'étape 5.
+- Les vérifications se font dans cet ordre :
+  - `404 RENDEZ_VOUS_INTROUVABLE` : aucun rendez-vous ne porte cet `id` ;
+  - `403 AUTRE_MEDECIN` : ce rendez-vous est celui d'un autre médecin ;
+  - `409 CONSULTATION_DEJA_EXISTANTE` : ce rendez-vous a déjà été consulté ;
+  - `409 RENDEZ_VOUS_NON_CONFIRME` : le rendez-vous n'est pas `CONFIRME` ;
+  - `404 DOSSIER_INTROUVABLE` : le patient n'a pas de dossier. Faites d'abord l'étape 2.
+
+Pour relire : `GET /consultations/{id}` (médecin), ou le dossier complet avec `GET /dossiers/patient/12` (secrétaire ou médecin). Les consultations du dossier sont classées de la plus récente à la plus ancienne.
+
+**5. Rédiger l'ordonnance** (jeton du **médecin** de la consultation) : `POST http://localhost:8081/consultations/{id}/ordonnance`, où `{id}` est l'`id` de la consultation.
+
+```json
+{
+  "lignes": [
+    { "medicamentId": 3, "quantite": 2, "posologie": "1 comprimé matin et soir", "dureeJours": 5 }
+  ]
+}
+```
+
+- Au moins une ligne. Dans chaque ligne, tous les champs sont obligatoires, et `quantite` et `dureeJours` doivent être supérieurs à 0.
+- Réponse `201`. Chaque ligne affiche aussi le nom et le dosage du médicament.
+- **Prescrire ne change pas le stock.** L'ordonnance n'envoie pas non plus de demande au pharmacien : c'est le patient qui la fait (étape 6).
+- `404 CONSULTATION_INTROUVABLE` : aucune consultation ne porte cet `id`.
+- `403 AUTRE_MEDECIN` : seul le médecin qui a fait la consultation peut rédiger son ordonnance.
+- `409 ORDONNANCE_DEJA_EXISTANTE` : une consultation n'a qu'une seule ordonnance.
+- `404 MEDICAMENT_INTROUVABLE` : un `medicamentId` n'existe pas. Vérifiez avec `GET /medicaments`.
+- `400 DONNEES_INVALIDES` : la liste `lignes` est vide, ou une ligne est mal remplie.
+
+Pour relire : `GET /consultations/{id}/ordonnance` ou `GET /ordonnances/{id}`, avec le jeton du médecin ou du pharmacien.
+
+**6. Demander un médicament et le retirer**
+
+Le patient demande, le pharmacien répond, puis le patient vient chercher le produit :
+
+```text
+EN_ATTENTE ──validation──▶ VALIDEE ──retrait──▶ VALIDEE avec dateRetrait (le stock baisse)
+     └────────refus──────▶ REFUSEE
+```
+
+**a. Le patient demande** (jeton du **patient**) : `POST http://localhost:8081/demandes`
+
+```json
+{
+  "medicamentId": 3,
+  "quantite": 2
+}
+```
+
+Réponse `201`, avec le statut `EN_ATTENTE`. Notez l'`id` de la demande. Le stock n'est pas vérifié à ce moment-là : c'est le pharmacien qui répond. `404 MEDICAMENT_INTROUVABLE` si le médicament n'existe pas.
+
+**b. Le pharmacien voit les demandes à traiter** (jeton du **pharmacien**) : `GET http://localhost:8081/demandes?statut=EN_ATTENTE`. Les plus anciennes viennent en premier. Sans `?statut=...`, toutes les demandes s'affichent, des plus récentes aux plus anciennes.
+
+**c. Le pharmacien répond** (jeton du **pharmacien**) :
+
+- Le produit est disponible : `POST http://localhost:8081/demandes/{id}/validation`. Le statut devient `VALIDEE`.
+- Le produit n'est pas disponible : `POST http://localhost:8081/demandes/{id}/refus`. Le statut devient `REFUSEE`.
+
+Le corps est **facultatif**. Pour laisser un message au patient, envoyez `{"reponse": "Passez demain matin"}` (255 caractères au plus). Sans corps (*Body → none*), un message par défaut est enregistré.
+
+- `409 STOCK_INSUFFISANT` (validation seulement) : le stock est plus petit que la quantité demandée.
+- `409 DEMANDE_DEJA_TRAITEE` : la demande a déjà été validée ou refusée.
+- `404 DEMANDE_INTROUVABLE` : aucune demande ne porte cet `id`.
+- `400 REPONSE_TROP_LONGUE` : le message dépasse 255 caractères.
+
+**d. Le patient lit la réponse** (jeton du **patient**) : `GET http://localhost:8081/demandes/moi`. Il ne voit que ses propres demandes, des plus récentes aux plus anciennes, avec le statut et le message du pharmacien.
+
+**e. Le pharmacien confirme le retrait** (jeton du **pharmacien**), quand le patient vient chercher le produit : `POST http://localhost:8081/demandes/{id}/retrait`, **sans corps**.
+
+- **Le stock baisse** de la quantité demandée, et `dateRetrait` est rempli. Vérifiez avec `GET /medicaments`.
+- `409 DEMANDE_NON_VALIDEE` : la demande est encore `EN_ATTENTE`, ou a été `REFUSEE`.
+- `409 DEMANDE_DEJA_RETIREE` : le retrait a déjà été confirmé. Il ne se confirme qu'une fois.
+- `409 STOCK_INSUFFISANT` : d'autres retraits ont vidé le stock depuis la validation.
+
+**7. Générer un rapport** (jeton de l'**administrateur**) : `POST http://localhost:8081/rapports`
 
 ```json
 {
@@ -377,9 +458,43 @@ Le pharmacien répond avec `POST /demandes/{id}/validation` ou `POST /demandes/{
 }
 ```
 
-L'application calcule les chiffres de la période et les enregistre dans le champ `resume`. Par exemple : nombre de consultations, de patients, d'ordonnances et de dossiers créés.
+Les dates s'écrivent `année-mois-jour`. Le premier et le dernier jour sont **inclus**. L'application calcule les chiffres et les écrit dans le champ `resume` de la réponse (`201`). Le rapport est enregistré : `GET /rapports` les liste, des plus récents aux plus anciens.
 
-Les textes (antécédents, observations, diagnostic, posologie, réponse) sont limités à 255 caractères, la taille actuelle des colonnes en base.
+| `type` | Ce que contient `resume` |
+|---|---|
+| `ACTIVITE_MEDICALE` | Le nombre de consultations, de patients différents consultés, d'ordonnances et de dossiers créés pendant la période |
+| `RENDEZ_VOUS` | Le nombre de rendez-vous de la période (selon leur date), au total et pour chaque statut |
+| `STOCK_MEDICAMENTS` | Le nombre de médicaments, ceux sous le seuil d'alerte et ceux en rupture **au jour du rapport** ; puis les demandes reçues pendant la période, pour chaque statut, et les retraits confirmés avec le nombre d'unités sorties |
+
+Exemple de `resume` : `Du 01/11/2026 au 30/11/2026 : 3 consultation(s) pour 2 patient(s), 2 ordonnance(s), 4 dossier(s) créé(s).`
+
+- `400 PERIODE_INVALIDE` : la date de fin est avant la date de début.
+- `400 DONNEES_INVALIDES` : `type`, `periodeDebut` ou `periodeFin` manque.
+
+**Toutes les routes de la Partie 3, en résumé :**
+
+| Route | Accès | Ce qu'elle fait |
+|---|---|---|
+| `POST /medicaments` | Pharmacien | Ajoute un médicament avec son stock de départ. Répond `201 Created` |
+| `GET /medicaments` | Avec jeton | Liste les médicaments, triés par nom, avec leur stock et s'ils sont sous le seuil d'alerte |
+| `POST /dossiers` | Secrétaire | Crée le dossier d'un patient. Un seul dossier par patient. Répond `201 Created` |
+| `GET /dossiers/{id}` | Secrétaire, médecin | Renvoie un dossier, avec ses consultations, les plus récentes d'abord |
+| `GET /dossiers/patient/{patientId}` | Secrétaire, médecin | Renvoie le dossier d'un patient, à partir de l'`id` du patient |
+| `POST /consultations` | Médecin | Enregistre la consultation d'un de **ses** rendez-vous confirmés. Le rendez-vous passe à `TERMINE`. Répond `201 Created` |
+| `GET /consultations/{id}` | Médecin | Renvoie une consultation |
+| `POST /consultations/{id}/ordonnance` | Médecin | Rédige l'ordonnance d'une de **ses** consultations, une seule fois. Répond `201 Created` |
+| `GET /consultations/{id}/ordonnance` | Médecin, pharmacien | Renvoie l'ordonnance d'une consultation |
+| `GET /ordonnances/{id}` | Médecin, pharmacien | Renvoie une ordonnance |
+| `POST /demandes` | Patient | Demande une quantité d'un médicament. Répond `201 Created` |
+| `GET /demandes/moi` | Patient | Liste ses demandes, avec la réponse du pharmacien |
+| `GET /demandes?statut=EN_ATTENTE` | Pharmacien | Liste les demandes à traiter. Sans `statut`, liste toutes les demandes |
+| `POST /demandes/{id}/validation` | Pharmacien | Le produit est disponible. Refusé si le stock ne suffit pas |
+| `POST /demandes/{id}/refus` | Pharmacien | Le produit n'est pas disponible |
+| `POST /demandes/{id}/retrait` | Pharmacien | Le patient a pris le produit : **le stock baisse** |
+| `POST /rapports` | Administrateur | Génère un rapport sur une période. Répond `201 Created` |
+| `GET /rapports` | Administrateur | Liste les rapports, les plus récents d'abord |
+
+**Ce qui n'existe pas encore**, en attendant la décision du groupe sur les droits de chaque rôle : le patient ne peut lire ni son dossier ni ses ordonnances, et tout médecin peut lire n'importe quel dossier ou consultation.
 
 ## 3. Travailler avec Git
 
