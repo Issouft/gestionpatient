@@ -23,6 +23,11 @@ com.forceN.gestionpatient
 │   ├── AbstractEntity
 │   └── exception : CodeErreur, ApplicationException, GlobalExceptionHandler
 │
+├── etablissement                   ← socle SaaS : les établissements de la plateforme
+│   ├── entities   : Etablissement
+│   ├── enums      : TypeEtablissement (CLINIQUE, CABINET, PHARMACIE, LABORATOIRE)
+│   └── repository : EtablissementRepository
+│
 ├── securite                        ← Partie 1
 │   ├── config     : SecurityConfig
 │   ├── jwt        : JwtService, JwtFiltre
