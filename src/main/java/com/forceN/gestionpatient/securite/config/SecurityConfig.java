@@ -5,10 +5,12 @@ import com.forceN.gestionpatient.securite.jwt.JwtFiltre;
 import com.forceN.gestionpatient.securite.jwt.JwtService;
 import com.forceN.gestionpatient.securite.service.UtilisateurConnecteService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -18,6 +20,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableMethodSecurity
@@ -33,6 +40,8 @@ public class SecurityConfig {
         return http
                 // Pas de session ni de cookie : le jeton est envoyé à chaque requête.
                 .csrf(AbstractHttpConfigurer::disable)
+                // Le frontend (autre adresse que l'API) a le droit d'appeler l'API : voir corsConfigurationSource().
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Tout est fermé par défaut : une route publique doit être ajoutée ici.
                 .authorizeHttpRequests(routes -> routes
@@ -56,6 +65,23 @@ public class SecurityConfig {
                 .addFilterBefore(new JwtFiltre(jwtService, utilisateurConnecteService),
                         UsernamePasswordAuthenticationFilter.class)
                 .build();
+    }
+
+    /**
+     * CORS : le navigateur bloque une page de localhost:4200 qui appelle l'API sur localhost:8081 (deux « origines »),
+     * sauf si l'API l'autorise. On autorise seulement l'adresse du frontend (application.url-frontend), pas « * ».
+     * Pas de cookies : le jeton voyage dans l'en-tête Authorization.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource(@Value("${application.url-frontend}") String urlFrontend) {
+        CorsConfiguration cors = new CorsConfiguration();
+        cors.setAllowedOrigins(List.of(urlFrontend));
+        cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+        cors.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        cors.setMaxAge(3600L); // le navigateur garde la réponse 1 h au lieu de redemander avant chaque requête
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", cors);
+        return source;
     }
 
     @Bean
