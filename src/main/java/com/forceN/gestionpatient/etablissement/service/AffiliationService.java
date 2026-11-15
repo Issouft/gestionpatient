@@ -1,9 +1,12 @@
 package com.forceN.gestionpatient.etablissement.service;
 
+import com.forceN.gestionpatient.commun.exception.ApplicationException;
 import com.forceN.gestionpatient.etablissement.dto.AccesEtablissementDto;
+import com.forceN.gestionpatient.etablissement.dto.EtablissementPublicDto;
 import com.forceN.gestionpatient.etablissement.entities.Affiliation;
 import com.forceN.gestionpatient.etablissement.entities.Etablissement;
 import com.forceN.gestionpatient.etablissement.enums.StatutAffiliation;
+import com.forceN.gestionpatient.etablissement.exception.EtablissementErreur;
 import com.forceN.gestionpatient.etablissement.repository.AffiliationRepository;
 import com.forceN.gestionpatient.etablissement.repository.EtablissementRepository;
 import com.forceN.gestionpatient.utilisateur.entities.Utilisateur;
@@ -19,6 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -117,6 +121,52 @@ public class AffiliationService {
     @Transactional(readOnly = true)
     public List<Utilisateur> comptesActifsDe(Integer etablissementId, Role role) {
         return affiliationRepository.trouverComptesActifs(etablissementId, role);
+    }
+
+    // ---------- Patients ----------
+
+    /**
+     * Le patient rejoint l'établissement (adhésion directe, sans validation). Ne fait rien s'il en fait déjà partie.
+     * 404 si l'établissement n'existe pas ou est désactivé ; 403 si l'établissement a suspendu son adhésion :
+     * il ne peut pas l'annuler lui-même en rejoignant à nouveau.
+     */
+    @Transactional
+    public void rejoindreEnPatient(Utilisateur patient, Integer etablissementId) {
+        Etablissement etablissement = etablissementRepository.findByIdAndActifTrue(etablissementId)
+                .orElseThrow(() -> new ApplicationException(EtablissementErreur.ETABLISSEMENT_INTROUVABLE,
+                        "Aucun établissement ne porte cet identifiant"));
+        Optional<Affiliation> existante = affiliationRepository
+                .findByUtilisateurIdAndEtablissementIdAndRole(patient.getId(), etablissementId, Role.PATIENT);
+        if (existante.isPresent()) {
+            if (!existante.get().estActive()) {
+                throw new ApplicationException(EtablissementErreur.ADHESION_SUSPENDUE,
+                        "Cet établissement a suspendu votre adhésion. Contactez-le directement.");
+            }
+            return;
+        }
+        affiliationRepository.save(Affiliation.builder()
+                .utilisateur(patient)
+                .etablissement(etablissement)
+                .role(Role.PATIENT)
+                .build());
+    }
+
+    /** Les établissements actifs que le patient a rejoints (adhésion ACTIVE), triés par nom. */
+    @Transactional(readOnly = true)
+    public List<EtablissementPublicDto> etablissementsDuPatient(Integer patientId) {
+        return affiliationRepository.trouverAccesActifs(patientId).stream()
+                .filter(affiliation -> affiliation.getRole() == Role.PATIENT)
+                .map(affiliation -> EtablissementPublicDto.fromEntity(affiliation.getEtablissement()))
+                .toList();
+    }
+
+    /**
+     * LA règle de confidentialité pour les Parties 2 et 3 : un établissement ne voit un patient (rendez-vous,
+     * dossier...) que si ce patient l'a rejoint, que son adhésion est active et que l'établissement est actif.
+     */
+    @Transactional(readOnly = true)
+    public boolean estPatientDe(Integer patientId, Integer etablissementId) {
+        return affiliationRepository.aUnAccesActif(patientId, etablissementId, Role.PATIENT);
     }
 
     /** Les rôles de la personne dans cet établissement. Vide si elle n'y a pas (ou plus) accès. */

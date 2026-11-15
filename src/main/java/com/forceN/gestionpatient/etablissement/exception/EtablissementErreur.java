@@ -9,7 +9,9 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum EtablissementErreur implements CodeErreur {
-    ETABLISSEMENT_INTROUVABLE(HttpStatus.NOT_FOUND, "Établissement introuvable");
+    ETABLISSEMENT_INTROUVABLE(HttpStatus.NOT_FOUND, "Établissement introuvable"),
+    // L'établissement a suspendu cette personne : elle ne peut pas se réinscrire seule.
+    ADHESION_SUSPENDUE(HttpStatus.FORBIDDEN, "Adhésion suspendue");
 
     private final HttpStatus statut;
     private final String titre;

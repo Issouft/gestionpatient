@@ -200,7 +200,7 @@ Les routes sont décrites ici. On peut les essayer avec Swagger (voir plus haut)
 
 | Route | Accès | Ce qu'elle fait |
 |---|---|---|
-| `POST /auth/inscription` | Publique | Crée un compte patient. Répond `201 Created` |
+| `POST /auth/inscription` | Publique | Crée un compte patient, et lui fait rejoindre la clinique choisie si `etablissementId` est donné. Répond `201 Created` |
 | `POST /auth/connexion` | Publique | Vérifie l'email et le mot de passe, puis renvoie un jeton et, pour le personnel, ses établissements |
 | `POST /auth/etablissement` | Avec jeton | Le personnel choisit (ou change) l'établissement où il travaille. Renvoie un nouveau jeton |
 | `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe. Un patient y voit aussi sa date de naissance, son âge, son téléphone et son adresse ; un médecin, sa spécialité et son numéro d'ordre |
@@ -221,6 +221,8 @@ Les routes sont décrites ici. On peut les essayer avec Swagger (voir plus haut)
 | `POST /etablissements/{id}/administrateurs` | Super-administrateur | Invite l'administrateur d'un établissement : compte inactif rattaché à l'établissement, lien d'activation par email. Répond `201 Created` |
 | `GET /annuaire/etablissements` | Publique | Liste les établissements actifs, triés par nom. Filtres facultatifs : `?type=CLINIQUE&ville=Thiès` |
 | `GET /annuaire/etablissements/{id}/medecins` | Publique | Liste les médecins en activité de cet établissement : nom, prénom et spécialité. Filtre facultatif : `?specialite=Cardiologie` |
+| `POST /patients/moi/etablissements/{id}` | Patient | Le patient rejoint cette clinique : elle pourra voir ses rendez-vous et son dossier. Répond `204 No Content`, même s'il l'avait déjà rejointe |
+| `GET /patients/moi/etablissements` | Patient | Liste les cliniques actives que le patient a rejointes, triées par nom |
 
 **1. S'inscrire :** `POST http://localhost:8081/auth/inscription`, avec ce corps en JSON (*Body → raw → JSON*) :
 
@@ -233,11 +235,14 @@ Les routes sont décrites ici. On peut les essayer avec Swagger (voir plus haut)
   "dateNaissance": "1995-04-12",
   "sexe": "FEMININ",
   "telephone": "771234567",
-  "adresse": "Dakar"
+  "adresse": "Dakar",
+  "etablissementId": 7
 }
 ```
 
-Tous les champs sont obligatoires. Le mot de passe doit contenir entre 8 et 72 caractères.
+Tous les champs sont obligatoires, sauf `etablissementId`. Le mot de passe doit contenir entre 8 et 72 caractères.
+
+`etablissementId` est la clinique choisie dans l'annuaire (voir « Consulter l'annuaire (public) ») : le patient la rejoint dès l'inscription. Sans ce champ, il pourra en rejoindre une plus tard. Une clinique inconnue ou désactivée donne `404` avec le code `ETABLISSEMENT_INTROUVABLE`, et le compte n'est pas créé.
 
 **2. Se connecter :** `POST http://localhost:8081/auth/connexion`, avec l'email et le mot de passe :
 
@@ -337,6 +342,19 @@ Avant même de créer son compte, un patient peut chercher une clinique et voir 
 - N'apparaissent que les médecins **en activité** : compte activé, et pas suspendus dans cet établissement.
 - **Données protégées :** ni email, ni numéro d'ordre, ni téléphone. Les secrétaires, pharmaciens et administrateurs n'apparaissent pas.
 - `404` avec le code `ETABLISSEMENT_INTROUVABLE` : l'établissement n'existe pas **ou** il est désactivé. La réponse est la même dans les deux cas.
+
+#### Rejoindre une clinique (patient)
+
+Une clinique ne voit un patient (rendez-vous, dossier...) **que s'il l'a rejointe lui-même**. Il peut le faire à l'inscription (`etablissementId`), ou plus tard avec son jeton :
+
+**1. Rejoindre :** `POST http://localhost:8081/patients/moi/etablissements/7`, **sans corps**, avec le jeton du patient. Réponse `204`.
+
+- Il peut rejoindre plusieurs cliniques. Rejoindre une clinique déjà rejointe ne change rien (`204`).
+- `404` avec le code `ETABLISSEMENT_INTROUVABLE` : la clinique n'existe pas ou est désactivée.
+- `403` avec le code `ADHESION_SUSPENDUE` : la clinique a suspendu son adhésion. Il ne peut pas l'annuler seul.
+- `403` avec le code `ACCES_REFUSE` : seul un patient peut rejoindre une clinique.
+
+**2. Voir ses cliniques :** `GET http://localhost:8081/patients/moi/etablissements`. Une clinique désactivée disparaît de la liste.
 
 #### Gérer les établissements (super-administrateur)
 
@@ -735,7 +753,8 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 | `Schema-validation: missing table` ou `missing column` | Une entité a une table ou un champ qu'aucune migration ne crée | Ajoutez une migration (voir « Modifier la base de données ») |
 | `Schema-validation: wrong column type` | Le type d'un champ Java ne correspond pas à la colonne | Corrigez l'entité, ou ajoutez une migration qui change la colonne |
 | `Validate failed: Migrations have failed validation` | Une migration déjà appliquée a été modifiée | Annulez la modification du fichier (`git restore`), puis mettez votre changement dans une nouvelle migration |
-| Réponse `404` avec le code `ETABLISSEMENT_INTROUVABLE` | Aucun établissement ne porte cet `id` | Vérifiez l'`id` avec `GET /etablissements` |
+| Réponse `404` avec le code `ETABLISSEMENT_INTROUVABLE` | Aucun établissement ne porte cet `id`. Pour l'annuaire, l'inscription et l'adhésion d'un patient : ou bien il est désactivé | Vérifiez l'`id` avec `GET /annuaire/etablissements` (ou `GET /etablissements` pour le super-administrateur) |
+| Réponse `403` avec le code `ADHESION_SUSPENDUE` | La clinique a suspendu l'adhésion de ce patient | Le patient doit contacter la clinique |
 | `Super-administrateur non créé : ... appartient déjà à un autre compte` dans la console | L'adresse de `super-administrateur.email` est déjà celle d'un autre compte | Choisissez une autre adresse dans `.env`, puis redémarrez |
 | `'url' attribute is not specified` après un redémarrage automatique | Un `clean` a vidé le dossier `target` pendant que l'application tournait | Arrêtez l'application, puis relancez-la. Ne lancez pas `clean` pendant qu'elle tourne |
 
@@ -758,6 +777,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 - La gestion des établissements par le super-administrateur (création, liste, désactivation, réactivation), sans accès à leurs données
 - L'invitation de l'administrateur d'un établissement par le super-administrateur
 - L'annuaire public : les établissements actifs et leurs médecins, consultables sans compte
+- L'adhésion du patient à une ou plusieurs cliniques, à l'inscription ou plus tard
 
 **Ce qui manque :**
 

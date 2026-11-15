@@ -50,4 +50,8 @@ public class PatientInscriptionDto {
     @NotBlank(message = "L'adresse est obligatoire")
     private String adresse;
 
+    // Facultatif : la clinique choisie dans l'annuaire (GET /annuaire/etablissements). Le patient la rejoint
+    // dès l'inscription. Il pourra en rejoindre d'autres ensuite (POST /patients/moi/etablissements/{id}).
+    private Integer etablissementId;
+
 }

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface AffiliationRepository extends JpaRepository<Affiliation, Integer> {
 
@@ -62,4 +63,17 @@ public interface AffiliationRepository extends JpaRepository<Affiliation, Intege
             order by u.nom, u.prenom, u.id
             """)
     List<Utilisateur> trouverComptesActifs(Integer etablissementId, Role role);
+
+    Optional<Affiliation> findByUtilisateurIdAndEtablissementIdAndRole(Integer utilisateurId, Integer etablissementId,
+            Role role);
+
+    /** Vrai si la personne a ce rôle, avec une affiliation ACTIVE, dans cet établissement actif. */
+    @Query("""
+            select count(a) > 0 from Affiliation a
+            where a.utilisateur.id = :utilisateurId and a.etablissement.id = :etablissementId
+              and a.etablissement.actif = true
+              and a.role = :role
+              and a.statut = com.forceN.gestionpatient.etablissement.enums.StatutAffiliation.ACTIVE
+            """)
+    boolean aUnAccesActif(Integer utilisateurId, Integer etablissementId, Role role);
 }

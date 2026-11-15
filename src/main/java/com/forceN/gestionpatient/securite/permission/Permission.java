@@ -16,6 +16,7 @@ public enum Permission {
 
     // Partie 1 : comptes
     PERSONNEL_GERER,        // créer, lister, inviter, suspendre et réactiver le personnel de son établissement
+    ETABLISSEMENT_REJOINDRE, // le patient rejoint une clinique et voit la liste des cliniques qu'il a rejointes
 
     // Partie 3 : médical
     DOSSIER_CREER,

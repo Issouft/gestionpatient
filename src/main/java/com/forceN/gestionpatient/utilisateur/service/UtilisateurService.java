@@ -83,8 +83,9 @@ public class UtilisateurService {
     /**
      * Retrouve le compte de la personne connectée (l'email vient du jeton).
      * 404 si le compte a été supprimé après la création du jeton.
+     * Visible dans le package : PatientService l'utilise aussi.
      */
-    private Utilisateur trouverCompteConnecte(String email) {
+    Utilisateur trouverCompteConnecte(String email) {
         return utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new ApplicationException(UtilisateurErreur.UTILISATEUR_INTROUVABLE,
                         "Ce compte n'existe plus. Reconnectez-vous."));

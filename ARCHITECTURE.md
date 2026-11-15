@@ -31,7 +31,8 @@ com.forceN.gestionpatient
 │   ├── exception  : EtablissementErreur
 │   ├── controller : EtablissementController (super-administrateur),
 │   │                AnnuaireEtablissementController (GET /annuaire/etablissements, public)
-│   ├── service    : EtablissementService, AffiliationService (où une personne peut travailler : utilisé par la sécurité)
+│   ├── service    : EtablissementService, AffiliationService (où une personne travaille, quelles cliniques
+│   │                un patient a rejointes : utilisé par la sécurité et par les autres parties)
 │   └── repository : EtablissementRepository, AffiliationRepository
 │
 ├── securite                        ← Partie 1
@@ -52,6 +53,7 @@ com.forceN.gestionpatient
 │   ├── enums    : Role, Sexe
 │   ├── exception : UtilisateurErreur
 │   ├── controller : UtilisateurController, PersonnelController, AnnuaireMedecinController (public),
+│   │                PatientEtablissementController (les cliniques du patient),
 │   │                AdministrateurEtablissementController (POST /etablissements/{id}/administrateurs :
 │   │                ici et pas dans etablissement, car c'est ce module qui crée les comptes)
 │   ├── service
@@ -216,13 +218,16 @@ Le personnel travaille **dans un établissement à la fois**. Son jeton contient
 
 Dans un contrôleur, `@AuthenticationPrincipal CompteAuthentifie connecte` donne l'email (`connecte.email()`) et l'établissement de la session (`connecte.etablissementId()`). Les contrôleurs qui reçoivent `UserDetails` continuent de marcher.
 
-**Toutes les routes sont fermées par défaut.** Seules trois routes sont publiques, car la personne n'a pas encore de jeton de connexion :
+**Toutes les routes sont fermées par défaut.** Seules ces routes sont publiques :
 
 | Route | Pourquoi elle est publique |
 |---|---|
 | `POST /auth/inscription` | Le patient n'a pas encore de compte |
 | `POST /auth/connexion` | C'est elle qui donne le jeton |
 | `POST /auth/activation` | Le personnel n'a pas encore de mot de passe. C'est le jeton reçu par email, valable 48 heures et une seule fois, qui prouve son identité |
+| `POST /auth/mot-de-passe-oublie` et `POST /auth/reinitialisation` | La personne a perdu son mot de passe. C'est le jeton reçu par email, valable 1 heure et une seule fois, qui prouve son identité |
+| `GET /annuaire/**` | Le patient choisit sa clinique et son médecin avant d'avoir un compte. Lecture seule, fiches publiques seulement (`EtablissementPublicDto`, `MedecinPublicDto`) |
+| `GET /swagger-ui.html`, `/swagger-ui/**` et `/v3/api-docs/**` | La page de test et la liste des routes. Les routes elles-mêmes restent protégées. Désactivées en production avec `SWAGGER_ACTIF=false` |
 
 Pour rendre une autre route publique, il faut l'ajouter dans `SecurityConfig`. Expliquez pourquoi dans la description de la PR, pour que le groupe puisse la valider avant la fusion.
 
@@ -247,3 +252,11 @@ Pour rendre une autre route publique, il faut l'ajouter dans `SecurityConfig`. E
 Ainsi, changer les droits d'un rôle, ou ajouter un rôle comme infirmier ou laborantin, ne demande aucune modification des contrôleurs. N'utilisez plus `hasRole('MEDECIN')` : la route serait liée à un rôle et échapperait à `RolePermissions`.
 
 **Le niveau 3 est obligatoire pour les données médicales.** La permission seule ne suffit pas : un patient connecté pourrait lire le dossier d'un autre en changeant l'`id` dans l'URL. Le service doit donc vérifier que la donnée appartient bien à la personne connectée, ou qu'elle a le droit d'y accéder.
+
+**Un établissement ne voit que ses patients.** Un patient rejoint lui-même une clinique (à l'inscription ou avec `POST /patients/moi/etablissements/{id}`). Avant de montrer ou de créer une donnée d'un patient (rendez-vous, dossier...) pour l'établissement de la session, le service vérifie :
+
+```java
+affiliationService.estPatientDe(patientId, connecte.etablissementId())
+```
+
+Elle est vraie seulement si le patient a rejoint cet établissement, que son adhésion est active et que l'établissement est actif. Sinon, répondez `404` : l'établissement n'a pas à savoir que ce patient existe.
