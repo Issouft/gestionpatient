@@ -24,9 +24,9 @@ com.forceN.gestionpatient
 │   └── exception : CodeErreur, ApplicationException, GlobalExceptionHandler
 │
 ├── etablissement                   ← socle SaaS : les établissements de la plateforme
-│   ├── entities   : Etablissement
-│   ├── enums      : TypeEtablissement (CLINIQUE, CABINET, PHARMACIE, LABORATOIRE)
-│   └── repository : EtablissementRepository
+│   ├── entities   : Etablissement, Affiliation (tel compte a tel rôle dans tel établissement)
+│   ├── enums      : TypeEtablissement (CLINIQUE, CABINET, PHARMACIE, LABORATOIRE), StatutAffiliation
+│   └── repository : EtablissementRepository, AffiliationRepository
 │
 ├── securite                        ← Partie 1
 │   ├── config     : SecurityConfig
