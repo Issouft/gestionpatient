@@ -8,7 +8,6 @@ import com.forceN.gestionpatient.securite.dto.ConnexionRequete;
 import com.forceN.gestionpatient.securite.exception.SecuriteErreur;
 import com.forceN.gestionpatient.securite.jwt.JwtService;
 import com.forceN.gestionpatient.utilisateur.entities.Utilisateur;
-import com.forceN.gestionpatient.utilisateur.enums.Role;
 import com.forceN.gestionpatient.utilisateur.repository.UtilisateurRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,7 +20,8 @@ import java.util.Locale;
 
 /**
  * Connexion et choix de l'établissement.
- * - Un patient reçoit un jeton sans établissement : il agit pour lui-même, dans toutes ses cliniques.
+ * - Un patient (ou le super-administrateur) reçoit un jeton sans établissement : le patient agit pour lui-même,
+ *   dans toutes ses cliniques ; le super-administrateur gère la plateforme.
  * - Le personnel qui travaille dans un seul établissement le reçoit directement dans son jeton.
  * - Celui qui travaille dans plusieurs reçoit la liste, puis choisit avec POST /auth/etablissement.
  */
@@ -51,7 +51,7 @@ public class AuthService {
         }
 
         Utilisateur utilisateur = trouver(email);
-        if (utilisateur.getRole() == Role.PATIENT) {
+        if (utilisateur.getRole().agitSansEtablissement()) {
             return new ConnexionReponse(jwtService.genererJeton(email), null, List.of());
         }
 
@@ -67,9 +67,9 @@ public class AuthService {
      * la réponse est la même si l'établissement n'existe pas, pour ne pas révéler lesquels existent.
      */
     public ConnexionReponse choisirEtablissement(CompteAuthentifie connecte, Integer etablissementId) {
-        if (connecte.roleDuCompte() == Role.PATIENT) {
+        if (connecte.roleDuCompte().agitSansEtablissement()) {
             throw new ApplicationException(SecuriteErreur.ETABLISSEMENT_NON_AUTORISE,
-                    "Un patient n'a pas d'établissement à choisir : son jeton lui suffit.");
+                    "Votre compte n'a pas d'établissement à choisir : son jeton lui suffit.");
         }
         Utilisateur utilisateur = trouver(connecte.email());
         List<AccesEtablissementDto> etablissements = affiliationService.accesDuPersonnel(utilisateur.getId());

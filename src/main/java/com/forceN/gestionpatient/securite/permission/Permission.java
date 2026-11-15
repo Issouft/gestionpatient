@@ -11,8 +11,11 @@ package com.forceN.gestionpatient.securite.permission;
  */
 public enum Permission {
 
+    // Plateforme (SaaS)
+    ETABLISSEMENT_GERER,    // créer, lister, désactiver les établissements et inviter leurs administrateurs
+
     // Partie 1 : comptes
-    PERSONNEL_GERER,        // créer, lister, inviter et désactiver le personnel
+    PERSONNEL_GERER,        // créer, lister, inviter, suspendre et réactiver le personnel de son établissement
 
     // Partie 3 : médical
     DOSSIER_CREER,

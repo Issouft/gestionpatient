@@ -25,6 +25,9 @@ public final class RolePermissions {
                 ORDONNANCE_CREER, ORDONNANCE_LIRE));
         PERMISSIONS.put(Role.PHARMACIEN, EnumSet.of(ORDONNANCE_LIRE, MEDICAMENT_GERER, DEMANDE_TRAITER));
         PERMISSIONS.put(Role.PATIENT, EnumSet.of(DEMANDE_SOUMETTRE));
+        // Décision du groupe : le super-administrateur gère la plateforme, mais ne voit aucune donnée des cliniques.
+        // Ne lui donner AUCUNE permission médicale ni de gestion du personnel.
+        PERMISSIONS.put(Role.SUPER_ADMINISTRATEUR, EnumSet.of(ETABLISSEMENT_GERER));
     }
 
     private RolePermissions() {

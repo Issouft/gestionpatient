@@ -55,12 +55,14 @@ public class UtilisateurConnecteService implements UserDetailsService {
 
         Integer etablissementId = jeton.etablissementId();
 
-        // Un patient agit pour lui-même : ses jetons ne désignent jamais d'établissement.
-        if (utilisateur.getRole() == Role.PATIENT) {
+        // Patient et super-administrateur agissent sans établissement : leurs jetons n'en désignent jamais,
+        // et leurs droits viennent de leur rôle. Un tel jeton qui désigne un établissement n'a pas été émis par nous.
+        Role roleDuCompte = utilisateur.getRole();
+        if (roleDuCompte.agitSansEtablissement()) {
             if (etablissementId != null) {
                 throw new ApplicationException(SecuriteErreur.NON_AUTHENTIFIE, SESSION_PLUS_VALABLE);
             }
-            return versCompte(utilisateur, null, droits(Set.of(Role.PATIENT)));
+            return versCompte(utilisateur, null, droits(Set.of(roleDuCompte)));
         }
 
         // Personnel qui n'a pas encore choisi son établissement : connecté, mais sans aucune permission.

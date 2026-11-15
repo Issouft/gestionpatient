@@ -15,7 +15,7 @@ import java.util.List;
  * @param motDePasseHash  utilisé seulement à la connexion, pour vérifier le mot de passe
  * @param actif           un compte inactif ne peut ni se connecter ni utiliser son jeton
  * @param roleDuCompte    qui est la personne (PATIENT, MEDECIN...)
- * @param etablissementId où elle travaille pendant cette session ; null pour un patient,
+ * @param etablissementId où elle travaille pendant cette session ; null pour un patient ou le super-administrateur,
  *                        ou tant que le personnel n'a pas choisi
  * @param droits          ses permissions dans cet établissement (voir RolePermissions)
  */
@@ -24,7 +24,7 @@ public record CompteAuthentifie(String email, String motDePasseHash, boolean act
 
     /** Vrai pour le personnel qui ne travaille encore dans aucun établissement pendant cette session. */
     public boolean doitChoisirUnEtablissement() {
-        return roleDuCompte != Role.PATIENT && etablissementId == null;
+        return !roleDuCompte.agitSansEtablissement() && etablissementId == null;
     }
 
     @Override

@@ -28,6 +28,12 @@ class RolePermissionsTest {
     }
 
     @Test
+    void leSuperAdministrateurNeGereQueLesEtablissements() {
+        // Décision du groupe : aucune donnée des cliniques pour le super-administrateur.
+        assertThat(RolePermissions.de(Role.SUPER_ADMINISTRATEUR)).containsExactly(Permission.ETABLISSEMENT_GERER);
+    }
+
+    @Test
     void seulLAdministrateurGereLePersonnel() {
         for (Role role : Role.values()) {
             assertThat(RolePermissions.de(role).contains(Permission.PERSONNEL_GERER))

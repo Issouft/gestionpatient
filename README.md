@@ -92,7 +92,7 @@ spring.datasource.password=le_mot_de_passe_de_votre_PostgreSQL
 JWT_SECRET=une_longue_suite_de_caracteres_aleatoires
 spring.mail.username=votre.adresse@gmail.com
 spring.mail.password=le_mot_de_passe_d_application_gmail
-administrateur.email=email_du_premier_administrateur
+super-administrateur.email=email_du_super_administrateur
 ```
 
 | Ligne | À quoi elle sert |
@@ -100,7 +100,7 @@ administrateur.email=email_du_premier_administrateur
 | `spring.datasource.password` | Le mot de passe que l'application utilise pour se connecter à **votre** PostgreSQL |
 | `JWT_SECRET` | La clé qui permet au serveur de signer les jetons de connexion |
 | `spring.mail.username` et `spring.mail.password` | Le compte Gmail qui envoie les emails : invitation du personnel et mot de passe oublié |
-| `administrateur.email` | L'email du premier administrateur. Il n'y a pas de mot de passe ici : voir « Le premier administrateur » ci-dessous |
+| `super-administrateur.email` | L'email du super-administrateur, qui gère la plateforme. Il n'y a pas de mot de passe ici : voir « Le super-administrateur » ci-dessous |
 
 Pour obtenir une valeur pour `JWT_SECRET`, lancez cette commande et copiez le résultat :
 
@@ -114,18 +114,20 @@ Pour `spring.mail.password`, n'utilisez pas votre mot de passe Gmail habituel, m
 2. Dans la barre de recherche du compte, tapez « Mots de passe des applications ».
 3. Créez-en un, puis copiez le code de 16 lettres, sans les espaces.
 
-**L'application ne démarre pas si `spring.datasource.password` ou `JWT_SECRET` manque.** Sans la ligne `administrateur.email`, elle démarre, mais aucun administrateur n'est créé.
+**L'application ne démarre pas si `spring.datasource.password` ou `JWT_SECRET` manque.** Sans la ligne `super-administrateur.email`, elle démarre, mais aucun super-administrateur n'est créé.
 
-#### Le premier administrateur
+#### Le super-administrateur
 
-Au premier démarrage, s'il n'existe aucun administrateur, l'application en crée un avec l'email de `.env`. Son compte est **inactif**, et il reçoit un email avec un lien pour choisir **lui-même** son mot de passe. Ainsi, aucun mot de passe d'administrateur n'est écrit dans un fichier, et les développeurs ne le connaissent pas.
+Le **super-administrateur** gère la plateforme : il crée les établissements et invite leurs administrateurs. Il n'appartient à aucun établissement, et **il n'a accès à aucune donnée des cliniques** (personnel, dossiers, consultations, rapports…) : c'est une décision du groupe, pour la confidentialité des données de santé.
 
-Il est rattaché au plus ancien établissement de la base. Sur une base neuve, une « Clinique principale » est créée pour lui. Le personnel qu'il crée ensuite sera rattaché à cet établissement.
+Au premier démarrage, s'il n'existe aucun super-administrateur, l'application en crée un avec l'email de `.env`. Son compte est **inactif**, et il reçoit un email avec un lien pour choisir **lui-même** son mot de passe. Ainsi, aucun mot de passe n'est écrit dans un fichier, et les développeurs ne le connaissent pas.
 
 - Le lien se termine par `?jeton=...`. Comme pour le personnel, envoyez ce jeton et le mot de passe choisi à `POST /auth/activation` (voir « Créer un membre du personnel », étape 3).
-- Lien perdu ou expiré ? Redémarrez l'application : tant que l'administrateur n'a pas activé son compte, un nouveau lien part à chaque démarrage. L'ancien ne marche plus.
+- Lien perdu ou expiré ? Redémarrez l'application : tant que le super-administrateur n'a pas activé son compte, un nouveau lien part à chaque démarrage. L'ancien ne marche plus.
 - Si l'email ne part pas, l'application démarre quand même, avec un avertissement dans la console.
-- Si vous aviez une ligne `administrateur.mot-de-passe` dans votre `.env`, supprimez-la : elle ne sert plus. Un administrateur déjà actif dans votre base n'est pas modifié.
+- **L'adresse doit être nouvelle.** Si elle appartient déjà à un compte (patient, administrateur…), le super-administrateur n'est pas créé, et la console affiche une erreur qui le dit. L'application démarre quand même.
+
+**Si votre `.env` contient encore `administrateur.email` :** remplacez-la par `super-administrateur.email`, avec une **autre** adresse. L'ancienne ligne ne sert plus. L'administrateur qui existe déjà dans votre base reste l'administrateur de la « Clinique principale », avec le même mot de passe.
 
 ## 2. Lancer le projet
 
@@ -297,7 +299,7 @@ Le personnel ne s'inscrit pas lui-même : c'est l'administrateur qui crée son c
 
 **Tout se passe dans l'établissement de l'administrateur**, celui de son jeton. La personne créée y est rattachée automatiquement. L'administrateur ne voit ni ne touche le personnel des autres établissements : pour lui, il n'existe pas (`404`).
 
-**1. Se connecter en administrateur :** `POST /auth/connexion` avec l'email de l'administrateur et le mot de passe qu'il a choisi (voir « Le premier administrateur »). Copiez le jeton.
+**1. Se connecter en administrateur :** `POST /auth/connexion` avec l'email de l'administrateur et le mot de passe qu'il a choisi (voir « Créer l'administrateur d'un établissement »). Copiez le jeton.
 
 **2. Créer le compte :** `POST http://localhost:8081/personnel`, avec le jeton de l'administrateur (*Bearer Token*) :
 
@@ -535,7 +537,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 - La création du personnel par l'administrateur, avec une invitation par email
 - Le renvoi d'une invitation, avec un seul lien valide à la fois
 - La liste du personnel, sa suspension et sa réactivation par l'administrateur, dans son établissement seulement
-- La création du premier administrateur au démarrage : il choisit lui-même son mot de passe grâce à un lien envoyé par email
+- La création du super-administrateur au démarrage : il choisit lui-même son mot de passe grâce à un lien envoyé par email
 
 **Ce qui manque :**
 

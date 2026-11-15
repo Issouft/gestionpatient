@@ -9,6 +9,7 @@ import com.forceN.gestionpatient.outils.SessionsDeTest;
 import com.forceN.gestionpatient.securite.jwt.JwtService;
 import com.forceN.gestionpatient.utilisateur.entities.Administrateur;
 import com.forceN.gestionpatient.utilisateur.entities.Patient;
+import com.forceN.gestionpatient.utilisateur.entities.SuperAdministrateur;
 import com.forceN.gestionpatient.utilisateur.entities.Utilisateur;
 import com.forceN.gestionpatient.utilisateur.repository.UtilisateurRepository;
 import com.jayway.jsonpath.JsonPath;
@@ -43,6 +44,7 @@ class ConnexionEtablissementTest {
     private static final String MOT_DE_PASSE = "mot-de-passe-de-test";
     private static final String EMAIL_ADMIN = "admin.etablissement@test.invalid";
     private static final String EMAIL_PATIENT = "patient.etablissement@test.invalid";
+    private static final String EMAIL_SUPER_ADMIN = "super.admin.etablissement@test.invalid";
 
     @Autowired
     private MockMvc mockMvc;
@@ -118,6 +120,28 @@ class ConnexionEtablissementTest {
                 .andExpect(jsonPath("$.etablissementId").value(nullValue()))
                 .andExpect(jsonPath("$.etablissements", hasSize(0))));
 
+        choisir(jeton, sessions.creerClinique("Clinique A").getId())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ETABLISSEMENT_NON_AUTORISE"));
+    }
+
+    @Test
+    void leSuperAdministrateurNAccedeAAucuneDonneeDesCliniques() throws Exception {
+        creer(SuperAdministrateur.builder().email(EMAIL_SUPER_ADMIN));
+
+        String jeton = jetonDe(connecter(EMAIL_SUPER_ADMIN)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.etablissementId").value(nullValue()))
+                .andExpect(jsonPath("$.etablissements", hasSize(0))));
+
+        // Décision du groupe : ni le personnel, ni les dossiers, ni les consultations, ni les rapports des cliniques.
+        for (String route : new String[] {"/personnel", "/dossiers/patient/1", "/consultations/1", "/rapports",
+                "/demandes"}) {
+            mockMvc.perform(get(route).header("Authorization", "Bearer " + jeton))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("ACCES_REFUSE"));
+        }
+        // Et il ne peut pas se placer dans un établissement.
         choisir(jeton, sessions.creerClinique("Clinique A").getId())
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("ETABLISSEMENT_NON_AUTORISE"));

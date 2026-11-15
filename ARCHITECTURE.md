@@ -41,7 +41,7 @@ com.forceN.gestionpatient
 │   └── exception  : SecuriteErreur, SecuriteErreurHandler
 │
 ├── utilisateur                     ← Partie 1
-│   ├── entities : Utilisateur, Patient, Medecin, Secretaire, Pharmacien, Administrateur
+│   ├── entities : Utilisateur, Patient, Medecin, Secretaire, Pharmacien, Administrateur, SuperAdministrateur
 │   ├── dto      : UtilisateurDto, PatientDto, MedecinDto (réponses) ;
 │   │              PatientInscriptionDto, PersonnelCreationDto, ModificationProfilDto, ChangementMotDePasseDto (requêtes)
 │   ├── enums    : Role, Sexe
@@ -203,6 +203,7 @@ Le personnel travaille **dans un établissement à la fois**. Son jeton contient
 | Qui | Son jeton | Ses permissions |
 |---|---|---|
 | Patient | Sans établissement : il agit pour lui-même, dans toutes ses cliniques | Celles du rôle `PATIENT` |
+| Super-administrateur | Sans établissement : il gère la plateforme | Seulement `ETABLISSEMENT_GERER`. **Aucune donnée des cliniques**, par décision du groupe |
 | Personnel avec un seul établissement | Avec cet établissement, dès la connexion | Celles de ses rôles dans cet établissement |
 | Personnel avec plusieurs établissements | Sans établissement à la connexion, puis avec celui choisi par `POST /auth/etablissement` | Aucune tant qu'il n'a pas choisi : `403 ETABLISSEMENT_NON_CHOISI` |
 
