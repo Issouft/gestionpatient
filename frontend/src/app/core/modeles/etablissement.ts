@@ -10,6 +10,14 @@ export const LIBELLES_TYPES: Record<TypeEtablissement, string> = {
   LABORATOIRE: 'Laboratoire',
 };
 
+/** L'icône Material de chaque type d'établissement. */
+export const ICONES_TYPES: Record<TypeEtablissement, string> = {
+  CLINIQUE: 'local_hospital',
+  CABINET: 'medical_services',
+  PHARMACIE: 'local_pharmacy',
+  LABORATOIRE: 'biotech',
+};
+
 /** etablissement/dto/EtablissementPublicDto.java : la fiche publique d'un établissement actif. */
 export interface EtablissementPublic {
   id: number;

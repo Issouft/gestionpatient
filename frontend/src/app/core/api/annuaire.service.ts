@@ -23,6 +23,11 @@ export class AnnuaireService {
     return this.http.get<EtablissementPublic[]>(this.url, { params });
   }
 
+  /** La fiche d'un établissement actif. 404 ETABLISSEMENT_INTROUVABLE s'il n'existe pas ou est désactivé. */
+  fiche(etablissementId: number): Observable<EtablissementPublic> {
+    return this.http.get<EtablissementPublic>(`${this.url}/${etablissementId}`);
+  }
+
   /** Les médecins en activité d'un établissement, filtrés par spécialité si on la donne. */
   medecins(etablissementId: number, specialite?: string): Observable<MedecinPublic[]> {
     const params = specialite?.trim() ? new HttpParams().set('specialite', specialite.trim()) : undefined;

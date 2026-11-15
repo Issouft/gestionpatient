@@ -1,0 +1,40 @@
+<section class="page">
+  <div class="tete">
+    <div>
+      <h1 class="page-titre">Mes cliniques</h1>
+      <p class="sous-titre">Seules ces cliniques peuvent voir vos rendez-vous et votre dossier.</p>
+    </div>
+    <a mat-stroked-button routerLink="/annuaire"><mat-icon>add</mat-icon> Rejoindre une clinique</a>
+  </div>
+
+  @switch (resultat().etat) {
+    @case ('chargement') {
+      <div class="etat"><mat-progress-spinner mode="indeterminate" diameter="40" /></div>
+    }
+    @case ('erreur') {
+      @let r = resultat();
+      @if (r.etat === 'erreur') {
+        <p class="message message-erreur" role="alert"><mat-icon>error_outline</mat-icon>{{ r.message }}</p>
+      }
+    }
+    @case ('ok') {
+      @let r = resultat();
+      @if (r.etat === 'ok') {
+        @if (r.etablissements.length === 0) {
+          <div class="etat">
+            <span class="pastille"><mat-icon>local_hospital</mat-icon></span>
+            <h2>Vous n'avez rejoint aucune clinique</h2>
+            <p>Trouvez votre clinique dans l'annuaire et rejoignez-la : elle pourra alors vous suivre.</p>
+            <a mat-flat-button class="bouton-marque" routerLink="/annuaire">Trouver une clinique</a>
+          </div>
+        } @else {
+          <div class="grille-cartes">
+            @for (etab of r.etablissements; track etab.id) {
+              <app-carte-etablissement [etablissement]="etab" [rejointe]="true" />
+            }
+          </div>
+        }
+      }
+    }
+  }
+</section>

@@ -31,7 +31,8 @@ src/app
 ├── core/                       ← ce qui sert à toute l'application, une seule fois
 │   ├── api/                    ← les SEULS endroits qui connaissent les adresses du backend
 │   │   ├── annuaire.service.ts      ← GET /annuaire/** (public)
-│   │   └── compte-public.service.ts ← inscription, activation, mot de passe oublié, réinitialisation
+│   │   ├── compte-public.service.ts ← inscription, activation, mot de passe oublié, réinitialisation
+│   │   └── patient.service.ts       ← les cliniques du patient (rejoindre, mes cliniques)
 │   ├── auth/
 │   │   ├── session.service.ts  ← qui est connecté : jeton, profil, établissement de travail
 │   │   ├── jeton.interceptor.ts← ajoute le jeton à chaque requête vers l'API ; un 401 ferme la session
@@ -45,9 +46,12 @@ src/app
 │       └── etablissement.ts
 ├── shared/                     ← composants réutilisables par plusieurs écrans
 │   ├── page-acces/             ← mise en page des pages d'accès : vitrine à gauche, contenu à droite
-│   └── bouton-visibilite/      ← bouton « œil » pour afficher un mot de passe
+│   ├── bouton-visibilite/      ← bouton « œil » pour afficher un mot de passe
+│   └── carte-etablissement/    ← un établissement en carte cliquable (annuaire, mes cliniques)
 ├── features/                   ← un dossier par domaine, comme le backend
 │   ├── auth/                   ← connexion, inscription, activation, mot de passe oublié, choix de l'établissement
+│   ├── annuaire/               ← annuaire public et fiche d'un établissement avec ses médecins
+│   ├── patient/                ← mes cliniques
 │   ├── accueil/
 │   └── compte/                 ← mon profil
 ├── app.routes.ts               ← les pages de l'application
@@ -64,7 +68,8 @@ src/app
 5. **Cacher un bouton ne protège rien.** Les gardes et les menus sont du confort ; c'est le backend qui vérifie les droits.
 6. **L'adresse de l'API est dans `src/environments/`**, jamais écrite en dur dans le code.
 7. **Une page = un dossier dans `features/`**, chargée seulement quand on l'ouvre (`loadComponent` dans `app.routes.ts`).
-8. **Le style vient de `src/styles.scss`** : couleurs, polices, arrondis et classes communes (`.page`, `.carte-action`, `.formulaire-acces`, `.message`...). Un écran n'écrit pas de couleur en dur : il utilise les variables `--mat-sys-...` ou `--gp-...`.
+8. **Les pages d'accès** (connexion, inscription...) ont `data: { pleinEcran: true }` dans `app.routes.ts` : elles s'affichent sans la barre du haut.
+9. **Le style vient de `src/styles.scss`** : couleurs, polices, arrondis et classes communes (`.page`, `.carte-action`, `.formulaire-acces`, `.message`...). Un écran n'écrit pas de couleur en dur : il utilise les variables `--mat-sys-...` ou `--gp-...`.
 
 ## Les pages
 
@@ -75,6 +80,9 @@ src/app
 | `/mot-de-passe-oublie` | Visiteur | Envoie un lien valable 1 heure. Le message est le même que l'email ait un compte ou non |
 | `/activation?jeton=...` | Lien de l'email | Le personnel invité choisit son mot de passe |
 | `/reinitialisation?jeton=...` | Lien de l'email | Nouveau mot de passe après un oubli |
+| `/annuaire` | Tout le monde | Chercher un établissement par ville et par type |
+| `/annuaire/:id` | Tout le monde | La fiche d'un établissement et ses médecins (filtre par spécialité). Le visiteur peut y créer son compte, le patient peut rejoindre la clinique |
+| `/mes-cliniques` | Patient | Les cliniques qu'il a rejointes |
 | `/choix-etablissement` | Personnel | Choisir ou changer l'établissement de la session |
 | `/accueil` | Connecté | Les écrans du rôle, sous forme de cartes |
 | `/profil` | Connecté | Mon profil |

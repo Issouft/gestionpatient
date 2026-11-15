@@ -1,0 +1,98 @@
+<section class="page">
+  <a class="retour" routerLink="/annuaire"><mat-icon>arrow_back</mat-icon> Toutes les cliniques</a>
+
+  @switch (etat()) {
+    @case ('chargement') {
+      <div class="etat"><mat-progress-spinner mode="indeterminate" diameter="40" /></div>
+    }
+    @case ('introuvable') {
+      <div class="etat">
+        <span class="pastille"><mat-icon>domain_disabled</mat-icon></span>
+        <h2>Établissement introuvable</h2>
+        <p>Il n'existe pas, ou il n'est plus disponible sur la plateforme.</p>
+        <a mat-stroked-button routerLink="/annuaire">Voir les autres établissements</a>
+      </div>
+    }
+    @case ('erreur') {
+      <p class="message message-erreur" role="alert"><mat-icon>error_outline</mat-icon>{{ messageErreur() }}</p>
+    }
+    @case ('ok') {
+      @if (etablissement(); as etab) {
+        <div class="entete">
+          <span class="grande-pastille"><mat-icon>{{ icone() }}</mat-icon></span>
+          <div class="entete-texte">
+            <span class="type">{{ libelleType() }}</span>
+            <h1>{{ etab.nom }}</h1>
+            <ul class="coordonnees">
+              @if (etab.adresse || etab.ville) {
+                <li><mat-icon>place</mat-icon>{{ etab.adresse }}@if (etab.adresse && etab.ville) {, }{{ etab.ville }}</li>
+              }
+              @if (etab.telephone) {
+                <li><mat-icon>call</mat-icon><a [href]="'tel:' + etab.telephone">{{ etab.telephone }}</a></li>
+              }
+              @if (etab.email) {
+                <li><mat-icon>mail_outline</mat-icon><a [href]="'mailto:' + etab.email">{{ etab.email }}</a></li>
+              }
+            </ul>
+          </div>
+
+          <div class="action">
+            @if (estVisiteur()) {
+              <a mat-flat-button class="bouton-marque" routerLink="/inscription" [queryParams]="{ etablissement: etab.id }">
+                Créer mon compte ici
+              </a>
+              <a mat-button routerLink="/connexion">J'ai déjà un compte</a>
+            } @else if (estPatient()) {
+              @if (rejointe()) {
+                <span class="etiquette suivi"><mat-icon>verified</mat-icon>Vous êtes suivi(e) ici</span>
+              } @else {
+                <button mat-flat-button class="bouton-marque" (click)="rejoindre()" [disabled]="enCours()">
+                  @if (enCours()) {
+                    <mat-progress-spinner mode="indeterminate" diameter="20" />
+                  } @else {
+                    Rejoindre cette clinique
+                  }
+                </button>
+                <span class="consentement">Elle pourra voir vos rendez-vous et votre dossier.</span>
+              }
+            }
+          </div>
+        </div>
+
+        @if (erreurAdhesion(); as message) {
+          <p class="message message-erreur" role="alert"><mat-icon>error_outline</mat-icon>{{ message }}</p>
+        }
+
+        <div class="titre-medecins">
+          <h2>Les médecins <span class="nombre">{{ medecins().length }}</span></h2>
+          @if (specialites().length > 1) {
+            <mat-chip-listbox aria-label="Filtrer par spécialité" (change)="specialiteChoisie.set($event.value ?? null)">
+              @for (specialite of specialites(); track specialite) {
+                <mat-chip-option [value]="specialite">{{ specialite }}</mat-chip-option>
+              }
+            </mat-chip-listbox>
+          }
+        </div>
+
+        @if (medecins().length === 0) {
+          <div class="etat petit">
+            <span class="pastille pastille-tertiaire"><mat-icon>person_search</mat-icon></span>
+            <p>Aucun médecin n'est encore inscrit dans cet établissement.</p>
+          </div>
+        } @else {
+          <div class="grille-medecins">
+            @for (medecin of medecinsAffiches(); track medecin.id) {
+              <div class="medecin">
+                <span class="avatar-medecin">{{ initiales(medecin) }}</span>
+                <div>
+                  <strong>Dr {{ medecin.prenom }} {{ medecin.nom }}</strong>
+                  <span>{{ medecin.specialite || 'Médecine générale' }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      }
+    }
+  }
+</section>

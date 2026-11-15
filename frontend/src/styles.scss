@@ -34,6 +34,11 @@ html {
   --gp-arrondi: 16px;
   --gp-police-titres: 'Plus Jakarta Sans', Inter, sans-serif;
 
+  // La palette cyan de Material donne des « conteneurs » fluo : on les adoucit.
+  // (:root l'emporte sur les variables que mat.theme() pose sur html.)
+  --mat-sys-primary-container: #d6eff3;
+  --mat-sys-on-primary-container: #0b4954;
+
   // Composants Material : arrondis et hauteurs de toute l'application.
   --mat-button-filled-container-shape: 12px;
   --mat-button-filled-container-height: 48px;
@@ -655,4 +660,12 @@ input:-webkit-autofill:focus {
 
 .champ-clinique {
   margin-bottom: 24px;
+}
+
+.lien-bas.lien-secondaire {
+  margin-top: 12px;
+
+  a {
+    font-weight: 500;
+  }
 }

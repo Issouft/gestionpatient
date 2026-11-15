@@ -16,8 +16,13 @@ interface CarteAccueil {
 /** Les cartes propres à chaque rôle (en plus de « Mon profil », commune à tous). */
 const CARTES_PAR_ROLE: Partial<Record<Role, CarteAccueil[]>> = {
   PATIENT: [
-    { icone: 'travel_explore', titre: 'Trouver une clinique', texte: 'Parcourez les cliniques et leurs spécialistes.' },
-    { icone: 'local_hospital', titre: 'Mes cliniques', texte: 'Les cliniques qui vous suivent.' },
+    {
+      icone: 'travel_explore',
+      titre: 'Trouver une clinique',
+      texte: 'Parcourez les cliniques et leurs spécialistes.',
+      lien: '/annuaire',
+    },
+    { icone: 'local_hospital', titre: 'Mes cliniques', texte: 'Les cliniques qui vous suivent.', lien: '/mes-cliniques' },
     { icone: 'event_available', titre: 'Mes rendez-vous', texte: 'Prenez et suivez vos rendez-vous.' },
   ],
   ADMINISTRATEUR: [
