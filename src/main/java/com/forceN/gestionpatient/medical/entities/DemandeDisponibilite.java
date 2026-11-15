@@ -9,8 +9,11 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
+/**
+ * Un patient demande si un médicament est disponible, en une certaine quantité.
+ * Parcours : EN_ATTENTE → VALIDEE (puis retrait confirmé par le pharmacien) ou REFUSEE.
+ */
 @Getter
 @Setter
 @ToString(callSuper = true)
@@ -24,12 +27,22 @@ public class DemandeDisponibilite extends AbstractEntity {
     @Column(name = "date_demande")
     private Instant dateDemande;
 
+    // "default 1" : la colonne peut être ajoutée à une table qui contient déjà des demandes.
+    @Column(nullable = false, columnDefinition = "integer default 1 not null")
+    @Builder.Default
+    private int quantite = 1;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
     private StatutDemande statut = StatutDemande.EN_ATTENTE;
 
     private String reponse;
+
+    // Renseignée quand le pharmacien confirme que le patient a pris le produit. C'est à ce moment que le stock baisse.
+    // Un champ plutôt qu'un nouveau statut : Hibernate ne met pas à jour la liste des statuts autorisés d'une table existante.
+    @Column(name = "date_retrait")
+    private Instant dateRetrait;
 
     // Patient 1 — * DemandeDisponibilite ("soumet")
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
@@ -49,16 +62,19 @@ public class DemandeDisponibilite extends AbstractEntity {
     @ToString.Exclude
     private Pharmacien pharmacien;
 
-    /*
-    public void valider(String reponse) {
+    public void valider(Pharmacien pharmacien, String reponse) {
         this.statut = StatutDemande.VALIDEE;
+        this.pharmacien = pharmacien;
         this.reponse = reponse;
     }
 
-    public void refuser(String reponse) {
+    public void refuser(Pharmacien pharmacien, String reponse) {
         this.statut = StatutDemande.REFUSEE;
+        this.pharmacien = pharmacien;
         this.reponse = reponse;
     }
 
-     */
+    public boolean estRetiree() {
+        return dateRetrait != null;
+    }
 }

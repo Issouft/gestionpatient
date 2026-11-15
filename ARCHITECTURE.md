@@ -28,12 +28,13 @@ com.forceN.gestionpatient
 │   ├── jwt        : JwtService, JwtFiltre
 │   ├── controller : AuthController
 │   ├── service    : AuthService, UtilisateurConnecteService
-│   ├── dto        : ConnexionRequete, ConnexionReponse
+│   ├── dto        : ConnexionRequete, ConnexionReponse, ChoixMotDePasseRequete, MotDePasseOublieRequete
 │   └── exception  : SecuriteErreur, SecuriteErreurHandler
 │
 ├── utilisateur                     ← Partie 1
 │   ├── entities : Utilisateur, Patient, Medecin, Secretaire, Pharmacien, Administrateur
-│   ├── dto      : UtilisateurDto, PatientDto, MedecinDto, SecretaireDto, PharmacienDto, AdministrateurDto
+│   ├── dto      : UtilisateurDto, PatientDto, MedecinDto (réponses) ;
+│   │              PatientInscriptionDto, PersonnelCreationDto, ModificationProfilDto, ChangementMotDePasseDto (requêtes)
 │   ├── enums    : Role, Sexe
 │   ├── exception : UtilisateurErreur
 │   ├── controller
@@ -79,14 +80,14 @@ Par exemple, un `PatientDto` peut contenir le nom et la date de naissance du pat
 
 ### Pourquoi un DTO ne doit pas contenir d'entité
 
-Voici ce que contient `RendezVousDto` aujourd'hui :
+Voici ce que contenait `RendezVousDto` au départ :
 
 ```java
 private Patient patient;     // le patient complet, avec son email et son mot de passe haché
 private Medecin medecin;     // le médecin complet
 ```
 
-Pour afficher un rendez-vous, on transporte donc tout le patient et tout le médecin, alors qu'il suffit de savoir de qui il s'agit. Voici ce qu'on veut à la place :
+Pour afficher un rendez-vous, on transportait donc tout le patient et tout le médecin, alors qu'il suffit de savoir de qui il s'agit. Voici ce qu'il contient maintenant :
 
 ```java
 private Integer patientId;   // uniquement l'identifiant du patient

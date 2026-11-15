@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class PatientService {
     private final UtilisateurRepository utilisateurRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UtilisateurService utilisateurService;
 
     /**
      * Crée un compte patient et le renvoie sans mot de passe.
@@ -50,22 +51,7 @@ public class PatientService {
         patient.setTelephone(dto.getTelephone());
         patient.setAdresse(dto.getAdresse());
         // save renvoie le patient avec l'id généré par la base : c'est lui qu'on convertit.
-        return convertiPatientDTO(utilisateurRepository.save(patient));
-    }
-
-    /** Recopie l'entité dans le DTO de réponse, sans le mot de passe. */
-    private PatientDto convertiPatientDTO(Patient patient) {
-        PatientDto dto = new PatientDto();
-        dto.setId(patient.getId());
-        dto.setNom(patient.getNom());
-        dto.setPrenom(patient.getPrenom());
-        dto.setEmail(patient.getEmail());
-        dto.setDateNaissance(patient.getDateNaissance());
-        dto.setSexe(patient.getSexe());
-        dto.setTelephone(patient.getTelephone());
-        dto.setRole(patient.getRole());
-        dto.setActif(patient.isActif());
-        dto.setAdresse(patient.getAdresse());
-        return dto;
+        // La conversion est dans UtilisateurService : une seule façon de transformer un compte en DTO.
+        return utilisateurService.convertiPatientDto(utilisateurRepository.save(patient));
     }
 }

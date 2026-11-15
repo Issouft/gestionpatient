@@ -4,6 +4,7 @@ import com.forceN.gestionpatient.commun.AbstractEntity;
 import com.forceN.gestionpatient.utilisateur.enums.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -39,4 +40,18 @@ public abstract class Utilisateur extends AbstractEntity {
 
     @Builder.Default
     private boolean actif = true;
+
+    // Date du dernier changement de mot de passe. Les jetons de connexion créés avant sont refusés (voir JwtFiltre).
+    @JsonIgnore
+    @Column(name = "mot_de_passe_modifie_le")
+    private Instant motDePasseModifieLe;
+
+    /**
+     * Remplace le mot de passe (déjà haché) et note la date du changement :
+     * toutes les sessions ouvertes avant sont fermées.
+     */
+    public void changerMotDePasse(String motDePasseHache) {
+        this.password = motDePasseHache;
+        this.motDePasseModifieLe = Instant.now();
+    }
 }

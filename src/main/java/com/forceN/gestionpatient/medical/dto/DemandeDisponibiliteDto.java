@@ -2,64 +2,72 @@ package com.forceN.gestionpatient.medical.dto;
 
 import com.forceN.gestionpatient.medical.entities.DemandeDisponibilite;
 import com.forceN.gestionpatient.medical.enums.StatutDemande;
-import com.forceN.gestionpatient.utilisateur.dto.PatientDto;
-import com.forceN.gestionpatient.utilisateur.dto.PharmacienDto;
-import lombok.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
+/**
+ * Demande de disponibilité d'un médicament.
+ * Requête du patient (POST /demandes) : medicamentId et quantite.
+ * Réponse du pharmacien (validation, refus) : reponse seulement, facultative. Ces routes n'utilisent pas @Valid :
+ * le service vérifie la longueur de la réponse lui-même.
+ */
 @Getter
 @Setter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
 public class DemandeDisponibiliteDto {
+
+    // 255 : la taille de la colonne en base. Vérifiée par le service.
+    public static final int LONGUEUR_MAX_REPONSE = 255;
 
     private Integer id;
 
     private Instant dateDemande;
 
-    @Builder.Default
-    private StatutDemande statut = StatutDemande.EN_ATTENTE;
+    @Positive(message = "La quantité doit être supérieure à 0")
+    private int quantite;
+
+    private StatutDemande statut;
 
     private String reponse;
 
-    private PatientDto patient;
+    // Null tant que le pharmacien n'a pas confirmé que le patient a pris le produit.
+    private Instant dateRetrait;
 
-    private MedicamentDto medicament;
+    // Identifiants et DTO seulement : un DTO ne contient jamais d'entité (voir ARCHITECTURE.md).
+    private Integer patientId;
 
-    private PharmacienDto pharmacien;
+    @NotNull(message = "Le médicament est obligatoire")
+    private Integer medicamentId;
 
+    private String medicamentNom;
+
+    private Integer pharmacienId;
+
+    /** Entité → DTO. */
     public static DemandeDisponibiliteDto fromEntity(DemandeDisponibilite demande) {
-        if (demande == null) {
-            return null;
-        }
-        return DemandeDisponibiliteDto.builder()
-                .id(demande.getId())
-                .dateDemande(demande.getDateDemande())
-                .statut(demande.getStatut())
-                .reponse(demande.getReponse())
-                .patient(PatientDto.fromEntity(demande.getPatient()))
-                .medicament(MedicamentDto.fromEntity(demande.getMedicament()))
-                .pharmacien(PharmacienDto.fromEntity(demande.getPharmacien()))
-                .build();
+        DemandeDisponibiliteDto dto = new DemandeDisponibiliteDto();
+        dto.setId(demande.getId());
+        dto.setDateDemande(demande.getDateDemande());
+        dto.setQuantite(demande.getQuantite());
+        dto.setStatut(demande.getStatut());
+        dto.setReponse(demande.getReponse());
+        dto.setDateRetrait(demande.getDateRetrait());
+        dto.setPatientId(demande.getPatient().getId());
+        dto.setMedicamentId(demande.getMedicament().getId());
+        dto.setMedicamentNom(demande.getMedicament().getNom());
+        dto.setPharmacienId(demande.getPharmacien() == null ? null : demande.getPharmacien().getId());
+        return dto;
     }
 
-    public static DemandeDisponibilite toEntity(DemandeDisponibiliteDto dto) {
-        if (dto == null) {
-            return null;
-        }
-
-        DemandeDisponibilite demande = new DemandeDisponibilite();
-        demande.setId(dto.getId());
-        demande.setDateDemande(dto.getDateDemande());
-        demande.setStatut(dto.getStatut());
-        demande.setReponse(dto.getReponse());
-        demande.setPatient(PatientDto.toEntity(dto.getPatient()));
-        demande.setMedicament(MedicamentDto.toEntity(dto.getMedicament()));
-        demande.setPharmacien(PharmacienDto.toEntity(dto.getPharmacien()));
-
-        return demande;
+    /** DTO → entité. Le service ajoute la date, le patient et le médicament. Le statut part de EN_ATTENTE. */
+    public DemandeDisponibilite toEntity() {
+        return DemandeDisponibilite.builder()
+                .quantite(quantite)
+                .build();
     }
 }

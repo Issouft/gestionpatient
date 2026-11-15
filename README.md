@@ -93,15 +93,14 @@ JWT_SECRET=une_longue_suite_de_caracteres_aleatoires
 spring.mail.username=votre.adresse@gmail.com
 spring.mail.password=le_mot_de_passe_d_application_gmail
 administrateur.email=email_du_premier_administrateur
-administrateur.mot-de-passe=son_mot_de_passe
 ```
 
 | Ligne | À quoi elle sert |
 |---|---|
 | `spring.datasource.password` | Le mot de passe que l'application utilise pour se connecter à **votre** PostgreSQL |
 | `JWT_SECRET` | La clé qui permet au serveur de signer les jetons de connexion |
-| `spring.mail.username` et `spring.mail.password` | Le compte Gmail qui envoie les emails d'invitation au personnel |
-| `administrateur.email` et `administrateur.mot-de-passe` | Le premier administrateur, créé au démarrage s'il n'en existe aucun |
+| `spring.mail.username` et `spring.mail.password` | Le compte Gmail qui envoie les emails : invitation du personnel et mot de passe oublié |
+| `administrateur.email` | L'email du premier administrateur. Il n'y a pas de mot de passe ici : voir « Le premier administrateur » ci-dessous |
 
 Pour obtenir une valeur pour `JWT_SECRET`, lancez cette commande et copiez le résultat :
 
@@ -115,7 +114,16 @@ Pour `spring.mail.password`, n'utilisez pas votre mot de passe Gmail habituel, m
 2. Dans la barre de recherche du compte, tapez « Mots de passe des applications ».
 3. Créez-en un, puis copiez le code de 16 lettres, sans les espaces.
 
-**L'application ne démarre pas si `spring.datasource.password` ou `JWT_SECRET` manque.** Sans les lignes `administrateur`, elle démarre, mais aucun administrateur n'est créé.
+**L'application ne démarre pas si `spring.datasource.password` ou `JWT_SECRET` manque.** Sans la ligne `administrateur.email`, elle démarre, mais aucun administrateur n'est créé.
+
+#### Le premier administrateur
+
+Au premier démarrage, s'il n'existe aucun administrateur, l'application en crée un avec l'email de `.env`. Son compte est **inactif**, et il reçoit un email avec un lien pour choisir **lui-même** son mot de passe. Ainsi, aucun mot de passe d'administrateur n'est écrit dans un fichier, et les développeurs ne le connaissent pas.
+
+- Le lien se termine par `?jeton=...`. Comme pour le personnel, envoyez ce jeton et le mot de passe choisi à `POST /auth/activation` (voir « Créer un membre du personnel », étape 3).
+- Lien perdu ou expiré ? Redémarrez l'application : tant que l'administrateur n'a pas activé son compte, un nouveau lien part à chaque démarrage. L'ancien ne marche plus.
+- Si l'email ne part pas, l'application démarre quand même, avec un avertissement dans la console.
+- Si vous aviez une ligne `administrateur.mot-de-passe` dans votre `.env`, supprimez-la : elle ne sert plus. Un administrateur déjà actif dans votre base n'est pas modifié.
 
 ## 2. Lancer le projet
 
@@ -139,6 +147,8 @@ Les tests vérifient automatiquement que le code fonctionne. PostgreSQL doit êt
 
 Si tout va bien, vous verrez `BUILD SUCCESS`. Une longue trace d'erreur peut s'afficher pendant les tests : c'est normal, car l'un d'eux simule volontairement une panne.
 
+Les tests ne modifient pas votre base : chacun est annulé à la fin. Ils n'envoient pas non plus d'emails : l'envoi est remplacé par un faux pendant les tests.
+
 ### Essayer l'API
 
 Avec Postman, par exemple, l'application démarrée.
@@ -147,10 +157,16 @@ Avec Postman, par exemple, l'application démarrée.
 |---|---|---|
 | `POST /auth/inscription` | Publique | Crée un compte patient. Répond `201 Created` |
 | `POST /auth/connexion` | Publique | Vérifie l'email et le mot de passe, puis renvoie un jeton |
-| `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe |
+| `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe. Un patient y voit aussi sa date de naissance, son âge, son téléphone et son adresse ; un médecin, sa spécialité et son numéro d'ordre |
+| `PUT /utilisateurs/moi` | Avec jeton | Modifie le nom et le prénom ; pour un patient, aussi le téléphone et l'adresse. Renvoie le profil à jour |
+| `PUT /utilisateurs/moi/mot-de-passe` | Avec jeton | Change le mot de passe de la personne connectée, après vérification de l'ancien. Répond `204 No Content` |
+| `POST /auth/mot-de-passe-oublie` | Publique | Envoie par email un lien valable 1 h pour choisir un nouveau mot de passe. Répond toujours `204 No Content`, même si l'email n'a pas de compte |
+| `POST /auth/reinitialisation` | Publique | Change le mot de passe avec le jeton du lien. Répond `204 No Content` |
 | `POST /personnel` | Administrateur | Crée un médecin, une secrétaire ou un pharmacien, puis lui envoie un lien d'activation. Répond `201 Created` |
 | `POST /auth/activation` | Publique | Active un compte avec le jeton du lien et le mot de passe choisi. Répond `204 No Content` |
-| `POST /personnel/{id}/invitation` | Administrateur | Envoie un nouveau lien d'activation à une personne qui n'a pas encore activé son compte. L'ancien lien ne marche plus. Répond `204 No Content` |
+| `POST /personnel/{id}/invitation` | Administrateur | Envoie un nouveau lien d'activation à une personne qui n'a pas encore activé son compte, ou dont le compte a été désactivé. L'ancien lien ne marche plus. Répond `204 No Content` |
+| `GET /personnel` | Administrateur | Liste les médecins, secrétaires et pharmaciens, actifs ou non, triés par nom |
+| `POST /personnel/{id}/desactivation` | Administrateur | Désactive le compte d'un membre du personnel : il ne peut plus se connecter, et son jeton actuel est refusé tout de suite. Répond `204 No Content` |
 
 **1. S'inscrire :** `POST http://localhost:8081/auth/inscription`, avec ce corps en JSON (*Body → raw → JSON*) :
 
@@ -182,11 +198,56 @@ La réponse contient le jeton. Copiez-le.
 
 **3. Voir son profil :** `GET http://localhost:8081/utilisateurs/moi`, sans corps. Dans l'onglet *Authorization*, choisissez *Bearer Token* et collez le jeton. Sans jeton, la réponse est `401`.
 
+**Modifier son profil :** `PUT http://localhost:8081/utilisateurs/moi`, avec le jeton (*Bearer Token*) et ce corps en JSON :
+
+```json
+{
+  "nom": "Diop",
+  "prenom": "Awa",
+  "telephone": "781234567",
+  "adresse": "Thiès"
+}
+```
+
+Le nom et le prénom sont obligatoires. Le téléphone et l'adresse ne concernent que le patient : s'ils sont absents, ils ne changent pas. L'email, le rôle et le mot de passe ne se changent pas ici, même s'ils sont envoyés.
+
+**4. Changer son mot de passe :** `PUT http://localhost:8081/utilisateurs/moi/mot-de-passe`, avec le jeton (*Bearer Token*) et ce corps en JSON :
+
+```json
+{
+  "ancienMotDePasse": "secret123",
+  "nouveauMotDePasse": "nouveau456"
+}
+```
+
+La réponse est `204`, sans contenu. Le nouveau mot de passe suit les mêmes règles qu'à l'inscription. **Toutes les sessions sont fermées**, y compris celle en cours : les jetons créés avant le changement sont refusés (`401`). Reconnectez-vous avec le nouveau mot de passe. Ainsi, quelqu'un qui aurait volé une session la perd aussitôt.
+
+**5. Mot de passe oublié :** `POST http://localhost:8081/auth/mot-de-passe-oublie`, sans jeton, avec ce corps :
+
+```json
+{
+  "email": "awa@exemple.sn"
+}
+```
+
+La réponse est toujours `204`, que l'email ait un compte ou non : on ne révèle pas quels comptes existent. Si le compte existe et qu'il est actif, un email part avec un lien valable **1 heure**. Le lien se termine par `?jeton=...` : copiez ce jeton, avec un clic droit.
+
+Puis `POST http://localhost:8081/auth/reinitialisation`, sans jeton de connexion, avec ce corps :
+
+```json
+{
+  "jeton": "le-jeton-copié-depuis-le-lien",
+  "motDePasse": "nouveau789"
+}
+```
+
+La réponse est `204`. Le lien ne marche qu'une fois, et seul le dernier lien demandé est valable. Comme pour un changement de mot de passe, les sessions ouvertes avant sont fermées. Un compte inactif ne reçoit pas de lien : un membre du personnel qui n'a pas encore activé son compte doit utiliser son invitation.
+
 #### Créer un membre du personnel
 
 Le personnel ne s'inscrit pas lui-même : c'est l'administrateur qui crée son compte. L'administrateur ne choisit pas le mot de passe. La personne reçoit un email et choisit elle-même son mot de passe, que personne d'autre ne connaît.
 
-**1. Se connecter en administrateur :** `POST /auth/connexion` avec l'email et le mot de passe `administrateur` de votre `.env`. Copiez le jeton.
+**1. Se connecter en administrateur :** `POST /auth/connexion` avec l'email de l'administrateur et le mot de passe qu'il a choisi (voir « Le premier administrateur »). Copiez le jeton.
 
 **2. Créer le compte :** `POST http://localhost:8081/personnel`, avec le jeton de l'administrateur (*Bearer Token*) :
 
@@ -222,6 +283,103 @@ La réponse `204` n'a pas de corps : c'est normal. Le lien est valable 48 heures
 - `204` : un nouvel email est parti. **Seul le dernier lien marche** : les anciens sont désactivés, pour qu'il n'y ait jamais deux liens valides en même temps.
 - `409` avec le code `COMPTE_DEJA_ACTIF` : la personne a déjà activé son compte, aucun email n'est envoyé.
 - `404` avec le code `UTILISATEUR_INTROUVABLE` : aucun compte ne porte cet `id`.
+
+**5. Lister le personnel :** `GET http://localhost:8081/personnel`, avec le jeton de l'administrateur. Le champ `actif` de chaque compte indique s'il peut se connecter.
+
+**6. Désactiver un compte :** `POST http://localhost:8081/personnel/51/desactivation`, avec le jeton de l'administrateur et **sans corps**. Réponse `204`, même si le compte était déjà inactif.
+
+- La personne ne peut plus se connecter, et le jeton qu'elle utilisait est refusé (`401`) dès sa requête suivante.
+- Les liens qu'elle avait reçus (invitation, mot de passe oublié) ne marchent plus, et « mot de passe oublié » ne lui envoie rien.
+- `404` si l'`id` n'est pas celui d'un médecin, d'une secrétaire ou d'un pharmacien : un patient ou un administrateur ne se désactive pas ici.
+
+**Réactiver un compte :** renvoyez l'invitation (étape 4). La personne choisit un nouveau mot de passe avec le lien, et son compte redevient actif.
+
+#### Le parcours médical (Partie 3)
+
+Toutes ces routes demandent un jeton. Avec le jeton d'un autre rôle, la réponse est `403`.
+
+| Route | Accès | Ce qu'elle fait |
+|---|---|---|
+| `POST /dossiers` | Secrétaire | Crée le dossier d'un patient. Un seul dossier par patient. Répond `201 Created` |
+| `GET /dossiers/{id}` | Secrétaire, médecin | Renvoie un dossier, avec ses consultations, les plus récentes d'abord |
+| `GET /dossiers/patient/{patientId}` | Secrétaire, médecin | Renvoie le dossier d'un patient, à partir de l'id du patient |
+| `POST /consultations` | Médecin | Enregistre la consultation d'un de **ses** rendez-vous confirmés. Elle s'ajoute au dossier du patient, et le rendez-vous passe à `TERMINE`. Répond `201 Created` |
+| `GET /consultations/{id}` | Médecin | Renvoie une consultation |
+| `POST /consultations/{id}/ordonnance` | Médecin | Rédige l'ordonnance d'une consultation. Seul le médecin de la consultation peut le faire, une seule fois. Répond `201 Created` |
+| `GET /consultations/{id}/ordonnance` | Médecin, pharmacien | Renvoie l'ordonnance d'une consultation |
+| `GET /ordonnances/{id}` | Médecin, pharmacien | Renvoie une ordonnance |
+| `POST /medicaments` | Pharmacien | Ajoute un médicament avec son stock de départ. Répond `201 Created` |
+| `GET /medicaments` | Avec jeton | Liste les médicaments, avec leur stock et s'ils sont sous le seuil d'alerte |
+| `POST /demandes` | Patient | Demande si une quantité d'un médicament est disponible. Répond `201 Created` |
+| `GET /demandes/moi` | Patient | Liste ses demandes, avec la réponse du pharmacien |
+| `GET /demandes?statut=EN_ATTENTE` | Pharmacien | Liste les demandes à traiter. Sans `statut`, liste toutes les demandes |
+| `POST /demandes/{id}/validation` | Pharmacien | Le produit est disponible. Refusé (`409 STOCK_INSUFFISANT`) si le stock ne suffit pas |
+| `POST /demandes/{id}/refus` | Pharmacien | Le produit n'est pas disponible |
+| `POST /demandes/{id}/retrait` | Pharmacien | Le patient a pris le produit : **le stock baisse** de la quantité demandée |
+| `POST /rapports` | Administrateur | Génère un rapport sur une période. Répond `201 Created` |
+| `GET /rapports` | Administrateur | Liste les rapports, les plus récents d'abord |
+
+**1. Créer le dossier (secrétaire) :** `POST /dossiers`. Les antécédents sont facultatifs.
+
+```json
+{
+  "patientId": 12,
+  "antecedents": "Asthme"
+}
+```
+
+**2. Consulter (médecin) :** `POST /consultations`. Le rendez-vous doit être `CONFIRME`, appartenir au médecin connecté, et le patient doit déjà avoir un dossier.
+
+```json
+{
+  "rendezVousId": 7,
+  "observations": "Fièvre depuis 2 jours",
+  "diagnostic": "Grippe"
+}
+```
+
+La Partie 2 n'a pas encore de routes pour créer un rendez-vous. Pour essayer, ajoutez une ligne dans la table `rendez_vous` avec le statut `CONFIRME`.
+
+**3. Rédiger l'ordonnance (médecin) :** `POST /consultations/{id}/ordonnance`, avec au moins un médicament :
+
+```json
+{
+  "lignes": [
+    { "medicamentId": 3, "quantite": 2, "posologie": "1 comprimé matin et soir", "dureeJours": 5 }
+  ]
+}
+```
+
+Prescrire ne change pas le stock.
+
+**4. Ajouter un médicament (pharmacien) :** `POST /medicaments`. Le stock n'est donné qu'à la création. Ensuite, il baisse tout seul à chaque retrait confirmé.
+
+```json
+{
+  "nom": "Paracétamol",
+  "dosage": "500 mg",
+  "stock": 100,
+  "seuilAlerte": 10
+}
+```
+
+**5. Demander un médicament (patient) :** `POST /demandes`, avec `{"medicamentId": 3, "quantite": 2}`. La demande est `EN_ATTENTE`.
+
+Le pharmacien répond avec `POST /demandes/{id}/validation` ou `POST /demandes/{id}/refus`. Le corps est facultatif : `{"reponse": "Passez demain matin"}`. Sans corps, un message par défaut est enregistré. Quand le patient vient chercher le produit, le pharmacien envoie `POST /demandes/{id}/retrait`, sans corps : le stock baisse, et `dateRetrait` est rempli. Un retrait ne se confirme qu'une fois.
+
+**6. Générer un rapport (administrateur) :** `POST /rapports`. Les deux dates sont incluses. `type` vaut `ACTIVITE_MEDICALE`, `RENDEZ_VOUS` ou `STOCK_MEDICAMENTS`.
+
+```json
+{
+  "type": "ACTIVITE_MEDICALE",
+  "periodeDebut": "2026-11-01",
+  "periodeFin": "2026-11-30"
+}
+```
+
+L'application calcule les chiffres de la période et les enregistre dans le champ `resume`. Par exemple : nombre de consultations, de patients, d'ordonnances et de dossiers créés.
+
+Les textes (antécédents, observations, diagnostic, posologie, réponse) sont limités à 255 caractères, la taille actuelle des colonnes en base.
 
 ## 3. Travailler avec Git
 
@@ -294,28 +452,36 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 | Réponse `401` | Il faut être connecté pour accéder à cette route, ou le jeton a expiré | Inscrivez-vous si besoin, connectez-vous, puis envoyez le jeton (voir « Essayer l'API ») |
 | Réponse `400` avec le code `DONNEES_INVALIDES` | Un champ manque ou est mal rempli | La liste `erreurs` de la réponse indique quel champ corriger |
 | Réponse `409` avec le code `EMAIL_DEJA_UTILISE` | Un compte existe déjà avec cet email | Connectez-vous, ou choisissez un autre email |
+| Réponse `409` avec le code `NUMERO_ORDRE_DEJA_UTILISE` | Un autre médecin a déjà ce numéro d'ordre | Vérifiez le numéro d'ordre |
+| Réponse `409` avec le code `DONNEE_DEJA_UTILISEE` | La base a refusé une valeur déjà prise. Arrive surtout quand la même demande est envoyée deux fois en même temps (double clic) | Vérifiez si le compte n'a pas déjà été créé |
+| Réponse `503` avec le code `ENVOI_EMAIL_IMPOSSIBLE` | Le serveur d'emails n'a pas répondu. Rien n'a été créé | Vérifiez `spring.mail.username` et `spring.mail.password` dans `.env` et la connexion Internet, puis réessayez |
 | Réponse `403` | Vous êtes connecté, mais votre rôle n'a pas le droit d'utiliser cette route | Connectez-vous avec le bon compte, par exemple l'administrateur pour `POST /personnel` |
-| Réponse `400` avec le code `JETON_INVALIDE` | Le lien d'activation est faux, a expiré ou a déjà servi | Copiez le lien du **dernier** email reçu, avec un clic droit plutôt qu'à la main. S'il a expiré, l'administrateur peut renvoyer l'invitation (voir « Créer un membre du personnel », étape 4) |
+| Réponse `400` avec le code `MOT_DE_PASSE_INCORRECT` | L'ancien mot de passe envoyé pour en changer est faux | Vérifiez l'ancien mot de passe. Ce n'est pas un `401` : la session est toujours valable |
+| Réponse `400` avec le code `JETON_INVALIDE` | Le lien reçu par email (invitation ou mot de passe oublié) est faux, a expiré ou a déjà servi | Copiez le lien du **dernier** email reçu, avec un clic droit plutôt qu'à la main. S'il a expiré : pour une invitation, l'administrateur peut la renvoyer (voir « Créer un membre du personnel », étape 4) ; pour un mot de passe oublié, refaites la demande |
 | `cannot find symbol` sur `MEDECIN`, ou `incompatible types` avec `Role` | VS Code a importé une autre classe `Role` : `javax.management.relation.Role` | Remplacez l'import par `com.forceN.gestionpatient.utilisateur.enums.Role` |
 | `'url' attribute is not specified` après un redémarrage automatique | Un `clean` a vidé le dossier `target` pendant que l'application tournait | Arrêtez l'application, puis relancez-la. Ne lancez pas `clean` pendant qu'elle tourne |
 
 ## 5. Où en est le projet
 
-**Ce qui fonctionne :**
+**Ce qui fonctionne :** la Partie 1 (comptes et sécurité) est terminée.
 
 - L'organisation du code par domaine
+- Des DTO sans entités : ils contiennent des identifiants ou d'autres DTO
 - La gestion commune des erreurs
 - La sécurité : connexion, jetons et routes fermées par défaut
 - L'inscription d'un patient : données vérifiées, mot de passe chiffré, email unique
-- La consultation de son profil
+- La consultation et la modification de son profil
+- Le changement de son mot de passe, une fois connecté
+- Le mot de passe oublié, avec un lien par email valable 1 heure
 - La création du personnel par l'administrateur, avec une invitation par email
 - Le renvoi d'une invitation, avec un seul lien valide à la fois
-- La création du premier administrateur au démarrage
+- La liste du personnel et la désactivation d'un compte par l'administrateur
+- La création du premier administrateur au démarrage : il choisit lui-même son mot de passe grâce à un lien envoyé par email
 
 **Ce qui manque :**
 
-- [ ] **Changer son mot de passe**, une fois connecté.
-- [ ] **Corriger le contenu des DTO.** Beaucoup contiennent encore des entités.
-- [ ] **Écrire les fonctionnalités :** les contrôleurs, les services et les repositories de chaque domaine.
+- [ ] **Partie 2 (`rendezvous`) :** écrire les contrôleurs, les services et les repositories.
+- [x] **Partie 3 (`medical`) :** dossier, consultation, ordonnance, médicaments, demandes de disponibilité et rapports. Voir « Le parcours médical (Partie 3) ».
 - [ ] **Décider des droits de chaque rôle :** ce que chacun peut voir et faire.
+- [ ] **Décider comment créer le compte d'un patient sans email** ou qui ne maîtrise pas le numérique : qui le crée, avec quel identifiant.
 - [ ] **Choisir les responsables de chaque partie.** Voir [ARCHITECTURE.md](ARCHITECTURE.md), section 4.

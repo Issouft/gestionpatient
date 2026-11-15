@@ -35,4 +35,9 @@ public class Medicament extends AbstractEntity {
     public boolean estSousSeuilAlerte() {
         return stock <= seuilAlerte;
     }
+
+    /** Retire une quantité du stock. Le service vérifie avant que le stock suffit. */
+    public void retirerDuStock(int quantite) {
+        this.stock -= quantite;
+    }
 }

@@ -1,65 +1,61 @@
 package com.forceN.gestionpatient.medical.dto;
 
-import com.forceN.gestionpatient.medical.entities.Consultation;
 import com.forceN.gestionpatient.medical.entities.DossierPatient;
-import com.forceN.gestionpatient.utilisateur.dto.PatientDto;
-import com.forceN.gestionpatient.utilisateur.dto.SecretaireDto;
-import lombok.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Dossier d'un patient.
+ * Requête (POST /dossiers) : patientId et antecedents. Les autres champs sont remplis dans la réponse.
+ */
 @Getter
 @Setter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
 public class DossierPatientDto {
 
     private Integer id;
 
+    // Facultatif. 255 : la taille de la colonne en base.
+    @Size(max = 255, message = "Les antécédents ne doivent pas dépasser 255 caractères")
     private String antecedents;
 
-    private PatientDto patient;
+    // Identifiants et DTO seulement : un DTO ne contient jamais d'entité (voir ARCHITECTURE.md).
+    @NotNull(message = "Le patient est obligatoire")
+    private Integer patientId;
 
-    private SecretaireDto creePar;
+    // Pour afficher le dossier sans une deuxième requête.
+    private String patientNom;
 
-    // Uniquement les ids pour éviter la boucle infinie avec ConsultationDto
-    @Builder.Default
-    private List<Integer> consultationIds = new ArrayList<>();
+    private String patientPrenom;
 
-    public static DossierPatientDto fromEntity(DossierPatient dossierPatient) {
-        if (dossierPatient == null) {
-            return null;
-        }
-        return DossierPatientDto.builder()
-                .id(dossierPatient.getId())
-                .antecedents(dossierPatient.getAntecedents())
-                .patient(PatientDto.fromEntity(dossierPatient.getPatient()))
-                .creePar(SecretaireDto.fromEntity(dossierPatient.getCreePar()))
-                .consultationIds(
-                        dossierPatient.getConsultations() == null
-                                ? new ArrayList<>()
-                                : dossierPatient.getConsultations().stream()
-                                .map(Consultation::getId)
-                                .toList()
-                )
-                .build();
+    private Integer creeParId;
+
+    // Les plus récentes d'abord (voir @OrderBy dans DossierPatient).
+    private List<ConsultationDto> consultations = new ArrayList<>();
+
+    /** Entité → DTO, avec ses consultations. */
+    public static DossierPatientDto fromEntity(DossierPatient dossier) {
+        DossierPatientDto dto = new DossierPatientDto();
+        dto.setId(dossier.getId());
+        dto.setAntecedents(dossier.getAntecedents());
+        dto.setPatientId(dossier.getPatient().getId());
+        dto.setPatientNom(dossier.getPatient().getNom());
+        dto.setPatientPrenom(dossier.getPatient().getPrenom());
+        dto.setCreeParId(dossier.getCreePar() == null ? null : dossier.getCreePar().getId());
+        dto.setConsultations(dossier.getConsultations().stream().map(ConsultationDto::fromEntity).toList());
+        return dto;
     }
 
-    public static DossierPatient toEntity(DossierPatientDto dto) {
-        if (dto == null) {
-            return null;
-        }
-
-        DossierPatient dossierPatient = new DossierPatient();
-        dossierPatient.setId(dto.getId());
-        dossierPatient.setAntecedents(dto.getAntecedents());
-        dossierPatient.setPatient(PatientDto.toEntity(dto.getPatient()));
-        dossierPatient.setCreePar(SecretaireDto.toEntity(dto.getCreePar()));
-        // Les consultations ne sont pas reconstruites ici : elles sont gérées
-        // côté Consultation (qui porte la relation vers le dossier).
-
-        return dossierPatient;
+    /** DTO → entité. Le service ajoute le patient et la secrétaire. */
+    public DossierPatient toEntity() {
+        return DossierPatient.builder()
+                .antecedents(antecedents == null || antecedents.isBlank() ? null : antecedents.trim())
+                .build();
     }
 }

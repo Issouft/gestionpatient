@@ -1,17 +1,22 @@
 package com.forceN.gestionpatient.medical.dto;
 
 import com.forceN.gestionpatient.medical.entities.Ordonnance;
-import lombok.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Ordonnance.
+ * Requête (POST /consultations/{id}/ordonnance) : lignes seulement. La consultation vient de l'URL.
+ */
 @Getter
 @Setter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
 public class OrdonnanceDto {
 
@@ -19,50 +24,21 @@ public class OrdonnanceDto {
 
     private Instant dateEmission;
 
-    // Uniquement l'id pour éviter la boucle infinie avec ConsultationDto
+    // Identifiants et DTO seulement : un DTO ne contient jamais d'entité (voir ARCHITECTURE.md).
     private Integer consultationId;
 
-    @Builder.Default
+    // @Valid : chaque ligne est vérifiée elle aussi.
+    @NotEmpty(message = "L'ordonnance doit contenir au moins un médicament")
+    @Valid
     private List<LigneOrdonnanceDto> lignes = new ArrayList<>();
 
+    /** Entité → DTO, avec ses lignes. */
     public static OrdonnanceDto fromEntity(Ordonnance ordonnance) {
-        if (ordonnance == null) {
-            return null;
-        }
-        return OrdonnanceDto.builder()
-                .id(ordonnance.getId())
-                .dateEmission(ordonnance.getDateEmission())
-                .consultationId(ordonnance.getConsultation() == null ? null : ordonnance.getConsultation().getId())
-                .lignes(
-                        ordonnance.getLignes() == null
-                                ? new ArrayList<>()
-                                : ordonnance.getLignes().stream()
-                                .map(LigneOrdonnanceDto::fromEntity)
-                                .toList()
-                )
-                .build();
-    }
-
-    public static Ordonnance toEntity(OrdonnanceDto dto) {
-        if (dto == null) {
-            return null;
-        }
-
-        Ordonnance ordonnance = new Ordonnance();
-        ordonnance.setId(dto.getId());
-        ordonnance.setDateEmission(dto.getDateEmission());
-
-        if (dto.getLignes() != null) {
-            dto.getLignes().forEach(ligneDto -> {
-                LigneOrdonnanceDto ligne = LigneOrdonnanceDto.toEntity(ligneDto);
-                ligne.setOrdonnanceId(ordonnance); // renseigne la clé étrangère
-                ordonnance.getLignes().add(ligne);
-            });
-        }
-
-        // La consultation n'est pas reconstruite ici : elle est affectée dans le
-        // service via ordonnance.setConsultation(...) à partir de consultationId.
-
-        return ordonnance;
+        OrdonnanceDto dto = new OrdonnanceDto();
+        dto.setId(ordonnance.getId());
+        dto.setDateEmission(ordonnance.getDateEmission());
+        dto.setConsultationId(ordonnance.getConsultation().getId());
+        dto.setLignes(ordonnance.getLignes().stream().map(LigneOrdonnanceDto::fromEntity).toList());
+        return dto;
     }
 }

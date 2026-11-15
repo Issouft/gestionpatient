@@ -38,6 +38,7 @@ public class DossierPatient extends AbstractEntity {
 
     // Composition : DossierPatient 1 — * Consultation ("contient")
     @OneToMany(mappedBy = "dossierPatient", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("date DESC")
     @Builder.Default
     @JsonIgnore
     @ToString.Exclude

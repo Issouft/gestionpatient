@@ -1,70 +1,54 @@
-package com.forceN.gestionpatient.dto;
+package com.forceN.gestionpatient.medical.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.forceN.gestionpatient.medical.entities.Rapport;
-import com.forceN.gestionpatient.utilisateur.entities.Administrateur;
-import lombok.*;
+import com.forceN.gestionpatient.medical.enums.TypeRapport;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
+/**
+ * Rapport.
+ * Requête (POST /rapports) : type, periodeDebut, periodeFin (les deux jours sont inclus).
+ * Le résumé est calculé par l'application.
+ */
 @Getter
 @Setter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class AdministrateurDto {
+public class RapportDto {
 
     private Integer id;
 
-    private String nom;
-    private String prenom;
-    private String email;
-    private String contact;
+    @NotNull(message = "Le type de rapport est obligatoire")
+    private TypeRapport type;
 
-    // Écrit uniquement (création / modification), jamais renvoyé au front
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private String motDePasse;
+    @NotNull(message = "La date de début est obligatoire")
+    private LocalDate periodeDebut;
 
-    // Uniquement les ids des rapports, pour éviter la boucle infinie avec RapportDto
-    @Builder.Default
-    private List<Integer> rapportIds = new ArrayList<>();
+    @NotNull(message = "La date de fin est obligatoire")
+    private LocalDate periodeFin;
 
-    public static AdministrateurDto fromEntity(Administrateur administrateur) {
-        if (administrateur == null) {
-            return null;
-        }
-        return AdministrateurDto.builder()
-                .id(administrateur.getId())
-                .nom(administrateur.getNom())
-                .prenom(administrateur.getPrenom())
-                .email(administrateur.getEmail())
-                .contact(administrateur.getContact())
-                .rapportIds(
-                        administrateur.getRapports() == null
-                                ? new ArrayList<>()
-                                : administrateur.getRapports().stream()
-                                .map(Rapport::getId)
-                                .toList()
-                )
-                .build();
-    }
+    private Instant dateGeneration;
 
-    public static Administrateur toEntity(AdministrateurDto dto) {
-        if (dto == null) {
-            return null;
-        }
+    private String resume;
 
-        Administrateur administrateur = new Administrateur();
-        administrateur.setId(dto.getId());
-        administrateur.setNom(dto.getNom());
-        administrateur.setPrenom(dto.getPrenom());
-        administrateur.setEmail(dto.getEmail());
-        administrateur.setContact(dto.getContact());
-        // administrateur.setMotDePasse(dto.getMotDePasse());
-        // Les rapports ne sont pas reconstruits ici : la relation est portée
-        // par Rapport (qui référence l'administrateur).
+    // Identifiants et DTO seulement : un DTO ne contient jamais d'entité (voir ARCHITECTURE.md).
+    private Integer administrateurId;
 
-        return administrateur;
+    /** Entité → DTO. Les dates de période, stockées en Instant, redeviennent des jours dans le fuseau donné. */
+    public static RapportDto fromEntity(Rapport rapport, ZoneId fuseau) {
+        RapportDto dto = new RapportDto();
+        dto.setId(rapport.getId());
+        dto.setType(rapport.getType());
+        dto.setPeriodeDebut(LocalDate.ofInstant(rapport.getPeriodeDebut(), fuseau));
+        dto.setPeriodeFin(LocalDate.ofInstant(rapport.getPeriodeFin(), fuseau));
+        dto.setDateGeneration(rapport.getDateGeneration());
+        dto.setResume(rapport.getResume());
+        dto.setAdministrateurId(rapport.getAdministrateur().getId());
+        return dto;
     }
 }

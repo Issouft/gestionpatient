@@ -1,60 +1,64 @@
 package com.forceN.gestionpatient.medical.dto;
 
 import com.forceN.gestionpatient.medical.entities.Consultation;
-import com.forceN.gestionpatient.rendezvous.dto.RendezVousDto;
-import com.forceN.gestionpatient.utilisateur.dto.MedecinDto;
-import lombok.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 
+/**
+ * Consultation.
+ * Requête (POST /consultations) : rendezVousId, observations, diagnostic.
+ * Le patient et le dossier se déduisent du rendez-vous ; le médecin, du jeton.
+ */
 @Getter
 @Setter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
 public class ConsultationDto {
 
     private Integer id;
+
     private Instant date;
 
+    // 255 : la taille de la colonne en base.
+    @NotBlank(message = "Les observations sont obligatoires")
+    @Size(max = 255, message = "Les observations ne doivent pas dépasser 255 caractères")
     private String observations;
+
+    @NotBlank(message = "Le diagnostic est obligatoire")
+    @Size(max = 255, message = "Le diagnostic ne doit pas dépasser 255 caractères")
     private String diagnostic;
 
-    private DossierPatientDto dossierPatient;
+    // Identifiants et DTO seulement : un DTO ne contient jamais d'entité (voir ARCHITECTURE.md).
+    private Integer dossierPatientId;
 
-    private MedecinDto medecin;
+    private Integer medecinId;
 
-    private RendezVousDto rendezVous;
+    @NotNull(message = "Le rendez-vous est obligatoire")
+    private Integer rendezVousId;
 
+    /** Entité → DTO. getId() sur une relation LAZY ne déclenche pas de requête. */
     public static ConsultationDto fromEntity(Consultation consultation) {
-        if (consultation == null) {
-            return null;
-        }
-        return ConsultationDto.builder()
-                .id(consultation.getId())
-                .date(consultation.getDate())
-                .observations(consultation.getObservations())
-                .diagnostic(consultation.getDiagnostic())
-                .dossierPatient(DossierPatientDto.fromEntity(consultation.getDossierPatient()))
-                .medecin(MedecinDto.fromEntity(consultation.getMedecin()))
-                .rendezVous(RendezVousDto.fromEntity(consultation.getRendezVous()))
-                .build();
+        ConsultationDto dto = new ConsultationDto();
+        dto.setId(consultation.getId());
+        dto.setDate(consultation.getDate());
+        dto.setObservations(consultation.getObservations());
+        dto.setDiagnostic(consultation.getDiagnostic());
+        dto.setDossierPatientId(consultation.getDossierPatient().getId());
+        dto.setMedecinId(consultation.getMedecin().getId());
+        dto.setRendezVousId(consultation.getRendezVous().getId());
+        return dto;
     }
 
-    public static Consultation toEntity(ConsultationDto dto) {
-        if (dto == null) {
-            return null;
-        }
-
-        Consultation consultation = new Consultation();
-        consultation.setId(dto.getId());
-        consultation.setDate(dto.getDate());
-        consultation.setDiagnostic(dto.getDiagnostic());
-        consultation.setObservations(dto.getObservations());
-        consultation.setMedecin(MedecinDto.toEntity(dto.getMedecin()));
-        consultation.setDossierPatient(DossierPatientDto.toEntity(dto.getDossierPatient()));
-        consultation.setRendezVous(RendezVousDto.toEntity(dto.getRendezVous()));
-
-        return consultation;
+    /** DTO → entité. Le service ajoute la date, le médecin, le rendez-vous et le dossier. */
+    public Consultation toEntity() {
+        return Consultation.builder()
+                .observations(observations.trim())
+                .diagnostic(diagnostic.trim())
+                .build();
     }
 }
