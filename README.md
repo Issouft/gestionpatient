@@ -199,6 +199,10 @@ Avec Postman, par exemple, l'application démarrée.
 | `GET /personnel` | Administrateur | Liste les médecins, secrétaires et pharmaciens de son établissement, actifs ou non, triés par nom |
 | `POST /personnel/{id}/desactivation` | Administrateur | Suspend un membre du personnel dans son établissement : son jeton pour cet établissement est refusé tout de suite. Ses autres établissements ne changent pas. Répond `204 No Content` |
 | `POST /personnel/{id}/reactivation` | Administrateur | Rend l'accès à l'établissement à un membre suspendu, avec le même mot de passe. Répond `204 No Content` |
+| `POST /etablissements` | Super-administrateur | Crée un établissement. Répond `201 Created` |
+| `GET /etablissements` | Super-administrateur | Liste tous les établissements, actifs ou non, triés par nom |
+| `POST /etablissements/{id}/desactivation` | Super-administrateur | Désactive un établissement : tout son personnel perd l'accès tout de suite. Répond `204 No Content` |
+| `POST /etablissements/{id}/reactivation` | Super-administrateur | Réactive un établissement. Répond `204 No Content` |
 
 **1. S'inscrire :** `POST http://localhost:8081/auth/inscription`, avec ce corps en JSON (*Body → raw → JSON*) :
 
@@ -292,6 +296,37 @@ Puis `POST http://localhost:8081/auth/reinitialisation`, sans jeton de connexion
 ```
 
 La réponse est `204`. Le lien ne marche qu'une fois, et seul le dernier lien demandé est valable. Comme pour un changement de mot de passe, les sessions ouvertes avant sont fermées. Un compte inactif ne reçoit pas de lien : un membre du personnel qui n'a pas encore activé son compte doit utiliser son invitation.
+
+#### Gérer les établissements (super-administrateur)
+
+Le super-administrateur crée les établissements de la plateforme. Il voit leur fiche (nom, type, adresse, contact), mais **jamais leurs données** : ni personnel, ni patients, ni dossiers.
+
+**1. Se connecter en super-administrateur :** `POST /auth/connexion` avec son email et le mot de passe qu'il a choisi (voir « Le super-administrateur »). Copiez le jeton.
+
+**2. Créer un établissement :** `POST http://localhost:8081/etablissements`, avec le jeton du super-administrateur (*Bearer Token*) :
+
+```json
+{
+  "nom": "Clinique du Plateau",
+  "type": "CLINIQUE",
+  "adresse": "12 rue Carnot",
+  "ville": "Dakar",
+  "telephone": "338210000",
+  "email": "contact@clinique-plateau.sn"
+}
+```
+
+- `nom` et `type` sont obligatoires. `type` vaut `CLINIQUE`, `CABINET`, `PHARMACIE` ou `LABORATOIRE`.
+- `email` est l'adresse de contact de l'établissement : ce n'est pas un compte de connexion.
+- Réponse `201`, avec `"actif": true`. Notez l'`id` : il sert à inviter l'administrateur de l'établissement.
+
+**3. Lister les établissements :** `GET http://localhost:8081/etablissements`. Le champ `actif` indique si chacun est actif.
+
+**4. Désactiver un établissement :** `POST http://localhost:8081/etablissements/7/desactivation`, **sans corps**. Réponse `204`.
+
+- Tout son personnel perd l'accès à sa requête suivante (`401` avec le code `ACCES_ETABLISSEMENT_RETIRE`), et l'établissement n'est plus proposé à la connexion.
+- Ses données restent en base. `POST /etablissements/7/reactivation` le réactive, et son personnel retrouve l'accès.
+- `404` avec le code `ETABLISSEMENT_INTROUVABLE` : aucun établissement ne porte cet `id`.
 
 #### Créer un membre du personnel
 
@@ -520,6 +555,8 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 | `Schema-validation: missing table` ou `missing column` | Une entité a une table ou un champ qu'aucune migration ne crée | Ajoutez une migration (voir « Modifier la base de données ») |
 | `Schema-validation: wrong column type` | Le type d'un champ Java ne correspond pas à la colonne | Corrigez l'entité, ou ajoutez une migration qui change la colonne |
 | `Validate failed: Migrations have failed validation` | Une migration déjà appliquée a été modifiée | Annulez la modification du fichier (`git restore`), puis mettez votre changement dans une nouvelle migration |
+| Réponse `404` avec le code `ETABLISSEMENT_INTROUVABLE` | Aucun établissement ne porte cet `id` | Vérifiez l'`id` avec `GET /etablissements` |
+| `Super-administrateur non créé : ... appartient déjà à un autre compte` dans la console | L'adresse de `super-administrateur.email` est déjà celle d'un autre compte | Choisissez une autre adresse dans `.env`, puis redémarrez |
 | `'url' attribute is not specified` après un redémarrage automatique | Un `clean` a vidé le dossier `target` pendant que l'application tournait | Arrêtez l'application, puis relancez-la. Ne lancez pas `clean` pendant qu'elle tourne |
 
 ## 5. Où en est le projet

@@ -26,8 +26,10 @@ com.forceN.gestionpatient
 ├── etablissement                   ← socle SaaS : les établissements de la plateforme
 │   ├── entities   : Etablissement, Affiliation (tel compte a tel rôle dans tel établissement)
 │   ├── enums      : TypeEtablissement (CLINIQUE, CABINET, PHARMACIE, LABORATOIRE), StatutAffiliation
-│   ├── dto        : AccesEtablissementDto
-│   ├── service    : AffiliationService (où une personne peut travailler : utilisé par la sécurité)
+│   ├── dto        : EtablissementDto, AccesEtablissementDto
+│   ├── exception  : EtablissementErreur
+│   ├── controller : EtablissementController (super-administrateur)
+│   ├── service    : EtablissementService, AffiliationService (où une personne peut travailler : utilisé par la sécurité)
 │   └── repository : EtablissementRepository, AffiliationRepository
 │
 ├── securite                        ← Partie 1
