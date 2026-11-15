@@ -1,11 +1,11 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { Router } from '@angular/router';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Router, RouterLink } from '@angular/router';
 
 import { SessionService } from '../../../core/auth/session.service';
 import { messageErreur } from '../../../core/erreurs/message-erreur';
@@ -16,7 +16,15 @@ import { messageErreur } from '../../../core/erreurs/message-erreur';
  */
 @Component({
   selector: 'app-connexion',
-  imports: [ReactiveFormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatProgressBarModule],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+  ],
   templateUrl: './connexion.html',
   styleUrl: './connexion.scss',
 })
@@ -29,6 +37,7 @@ export class Connexion {
   readonly sessionTerminee = computed(() => this.raison() === 'session-terminee');
 
   readonly enCours = signal(false);
+  readonly motDePasseVisible = signal(false);
   readonly erreur = signal<string | null>(null);
 
   readonly formulaire = inject(NonNullableFormBuilder).group({

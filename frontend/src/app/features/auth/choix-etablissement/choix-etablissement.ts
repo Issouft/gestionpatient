@@ -1,8 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { MatListModule } from '@angular/material/list';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Router } from '@angular/router';
 
 import { SessionService } from '../../../core/auth/session.service';
@@ -15,21 +12,22 @@ import { AccesEtablissement, LIBELLES_ROLES } from '../../../core/modeles/compte
  */
 @Component({
   selector: 'app-choix-etablissement',
-  imports: [MatCardModule, MatListModule, MatIconModule, MatProgressBarModule],
+  imports: [MatIconModule],
   templateUrl: './choix-etablissement.html',
+  styles: `
+    .roles { display: flex; flex-wrap: wrap; gap: 6px; }
+    .actuel { border-color: var(--mat-sys-primary); background: var(--mat-sys-primary-container); }
+  `,
 })
 export class ChoixEtablissement {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
 
+  readonly libelles = LIBELLES_ROLES;
   readonly etablissements = this.session.etablissements;
   readonly courant = this.session.etablissementCourant;
   readonly enCours = signal(false);
   readonly erreur = signal<string | null>(null);
-
-  roles(acces: AccesEtablissement): string {
-    return acces.roles.map((role) => LIBELLES_ROLES[role]).join(', ');
-  }
 
   choisir(acces: AccesEtablissement): void {
     if (this.enCours()) {

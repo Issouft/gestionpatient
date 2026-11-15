@@ -1,22 +1,31 @@
-<mat-toolbar class="barre">
-  <a class="marque" routerLink="/accueil">
-    <mat-icon>local_hospital</mat-icon>
-    <span>GestionPatient</span>
-  </a>
+@if (estConnecte()) {
+  <header class="barre">
+    <a class="logo" routerLink="/accueil">
+      <span class="logo-icone"><mat-icon>health_and_safety</mat-icon></span>
+      <span class="logo-nom">GestionPatient</span>
+    </a>
 
-  <span class="espace"></span>
+    <span class="espace"></span>
 
-  @if (estConnecte()) {
     @if (etablissement(); as etab) {
-      <span class="etablissement">{{ etab.etablissementNom }}</span>
+      <span class="etiquette etablissement">
+        <mat-icon>local_hospital</mat-icon>
+        {{ etab.etablissementNom }}
+      </span>
     }
-    <button mat-button [matMenuTriggerFor]="menuCompte" aria-label="Menu du compte">
-      <mat-icon>account_circle</mat-icon>
-      {{ profil()?.prenom }}
+
+    <button class="compte" [matMenuTriggerFor]="menuCompte" aria-label="Menu du compte">
+      <span class="avatar">{{ initiales() }}</span>
+      <span class="compte-texte">
+        <strong>{{ profil()?.prenom }} {{ profil()?.nom }}</strong>
+        <span>{{ libelleRole() }}</span>
+      </span>
+      <mat-icon class="chevron">expand_more</mat-icon>
     </button>
-    <mat-menu #menuCompte="matMenu">
+
+    <mat-menu #menuCompte="matMenu" xPosition="before">
       <a mat-menu-item routerLink="/profil">
-        <mat-icon>person</mat-icon>
+        <mat-icon>person_outline</mat-icon>
         <span>Mon profil</span>
       </a>
       @if (plusieursEtablissements()) {
@@ -31,9 +40,13 @@
         <span>Se déconnecter</span>
       </button>
     </mat-menu>
-  }
-</mat-toolbar>
+  </header>
+}
 
-<main>
+<main [class.connecte]="estConnecte()">
   <router-outlet />
 </main>
+
+@if (estConnecte()) {
+  <footer class="pied">© GestionPatient · Vos données de santé restent dans votre clinique.</footer>
+}

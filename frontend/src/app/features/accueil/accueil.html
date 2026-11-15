@@ -1,28 +1,46 @@
 @if (profil(); as moi) {
   <section class="page">
-    <h1>Bonjour {{ moi.prenom }}</h1>
-    <p class="sous-titre">
-      {{ libelleRole() }}
-      @if (etablissement(); as etab) { · {{ etab.etablissementNom }} }
-    </p>
+    <div class="bandeau">
+      <div>
+        <p class="bandeau-sur-titre">{{ salutation }},</p>
+        <h1>{{ moi.prenom }} {{ moi.nom }}</h1>
+        <div class="bandeau-etiquettes">
+          <span class="etiquette-claire"><mat-icon>badge</mat-icon>{{ libelleRole() }}</span>
+          @if (etablissement(); as etab) {
+            <span class="etiquette-claire"><mat-icon>local_hospital</mat-icon>{{ etab.etablissementNom }}</span>
+          }
+        </div>
+      </div>
+      <mat-icon class="bandeau-illustration" aria-hidden="true">health_and_safety</mat-icon>
+    </div>
 
     @if (sansEtablissement()) {
       <p class="message message-info" role="status">
+        <mat-icon>info_outline</mat-icon>
         Vous n'avez accès à aucun établissement pour le moment. Contactez l'administrateur de votre établissement.
       </p>
     }
 
+    <h2 class="titre-section">Que souhaitez-vous faire ?</h2>
+
     <div class="grille-cartes">
-      <mat-card appearance="outlined">
-        <mat-card-header>
-          <mat-icon mat-card-avatar>person</mat-icon>
-          <mat-card-title>Mon profil</mat-card-title>
-          <mat-card-subtitle>Vos informations personnelles</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-actions>
-          <a mat-button routerLink="/profil">Voir mon profil</a>
-        </mat-card-actions>
-      </mat-card>
+      @for (carte of cartes(); track carte.titre) {
+        @if (carte.lien) {
+          <a class="carte-action" [routerLink]="carte.lien">
+            <span class="pastille"><mat-icon>{{ carte.icone }}</mat-icon></span>
+            <h3>{{ carte.titre }}</h3>
+            <p>{{ carte.texte }}</p>
+            <span class="lien-fleche">Ouvrir <mat-icon>arrow_forward</mat-icon></span>
+          </a>
+        } @else {
+          <div class="carte-action bientot" aria-disabled="true">
+            <span class="pastille pastille-tertiaire"><mat-icon>{{ carte.icone }}</mat-icon></span>
+            <h3>{{ carte.titre }}</h3>
+            <p>{{ carte.texte }}</p>
+            <span class="etiquette">Bientôt</span>
+          </div>
+        }
+      }
     </div>
   </section>
 }
