@@ -30,6 +30,7 @@ com.forceN.gestionpatient
 │
 ├── securite                        ← Partie 1
 │   ├── config     : SecurityConfig
+│   ├── permission : Permission, RolePermissions (les droits de chaque rôle)
 │   ├── jwt        : JwtService, JwtFiltre
 │   ├── controller : AuthController
 │   ├── service    : AuthService, UtilisateurConnecteService
@@ -205,13 +206,19 @@ Pour rendre une autre route publique, il faut l'ajouter dans `SecurityConfig`. E
 | Niveau | Question | Où | Réponse si refus |
 |---|---|---|---|
 | 1. Identité | Qui es-tu ? | `JwtFiltre`, déjà en place | 401 |
-| 2. Rôle | As-tu le droit de faire cette action ? | Contrôleur, avec `@PreAuthorize` | 403 |
+| 2. Permission | As-tu le droit de faire cette action ? | Contrôleur, avec `@PreAuthorize` | 403 |
 | 3. Propriété | Cette donnée te concerne-t-elle ? | Service, à écrire pour chaque donnée sensible | 403 |
 
-Pour limiter une route à un rôle :
+**Une route vérifie une permission, jamais un rôle :**
 
 ```java
-@PreAuthorize("hasRole('MEDECIN')")
+@PreAuthorize("hasAuthority('CONSULTATION_CREER')")
 ```
 
-**Le niveau 3 est obligatoire pour les données médicales.** Le rôle seul ne suffit pas : un patient connecté pourrait lire le dossier d'un autre en changeant l'`id` dans l'URL. Le service doit donc vérifier que la donnée appartient bien à la personne connectée, ou qu'elle a le droit d'y accéder.
+- Les permissions sont listées dans `securite/permission/Permission.java`.
+- Les permissions de chaque rôle sont décidées à un seul endroit : `securite/permission/RolePermissions.java`.
+- Pour une nouvelle route, réutilisez une permission qui a le même sens. Sinon, ajoutez-en une dans `Permission`, puis donnez-la aux rôles concernés dans `RolePermissions`.
+
+Ainsi, changer les droits d'un rôle, ou ajouter un rôle comme infirmier ou laborantin, ne demande aucune modification des contrôleurs. N'utilisez plus `hasRole('MEDECIN')` : la route serait liée à un rôle et échapperait à `RolePermissions`.
+
+**Le niveau 3 est obligatoire pour les données médicales.** La permission seule ne suffit pas : un patient connecté pourrait lire le dossier d'un autre en changeant l'`id` dans l'URL. Le service doit donc vérifier que la donnée appartient bien à la personne connectée, ou qu'elle a le droit d'y accéder.

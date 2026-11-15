@@ -1,8 +1,12 @@
 package com.forceN.gestionpatient.securite.service;
 
+import com.forceN.gestionpatient.securite.permission.RolePermissions;
 import com.forceN.gestionpatient.utilisateur.entities.Utilisateur;
+import com.forceN.gestionpatient.utilisateur.enums.Role;
 import com.forceN.gestionpatient.utilisateur.repository.UtilisateurRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -11,6 +15,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /** Charge un compte pour Spring Security : à la connexion (email + mot de passe) et à chaque requête (jeton). */
@@ -47,8 +53,19 @@ public class UtilisateurConnecteService implements UserDetailsService {
     private UserDetails versUserDetails(Utilisateur utilisateur) {
         return User.withUsername(utilisateur.getEmail())
                 .password(utilisateur.getPassword())
-                .roles(utilisateur.getRole().name())
+                .authorities(droits(utilisateur.getRole()))
                 .disabled(!utilisateur.isActif())
                 .build();
+    }
+
+    /**
+     * Les droits donnés à Spring Security : les permissions du rôle (vérifiées par les routes avec hasAuthority),
+     * plus le rôle lui-même sous la forme ROLE_xxx, pour information.
+     */
+    private List<GrantedAuthority> droits(Role role) {
+        List<GrantedAuthority> droits = new ArrayList<>();
+        droits.add(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        RolePermissions.de(role).forEach(permission -> droits.add(new SimpleGrantedAuthority(permission.name())));
+        return droits;
     }
 }

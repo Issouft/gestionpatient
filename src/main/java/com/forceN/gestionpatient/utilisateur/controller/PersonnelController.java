@@ -30,7 +30,7 @@ public class PersonnelController {
     // Le compte est créé inactif ; un email d'activation est envoyé à la personne.
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    @PreAuthorize("hasAuthority('PERSONNEL_GERER')")
     public UtilisateurDto creer(@Valid @RequestBody PersonnelCreationDto dto) {
         return personnelService.creer(dto);
     }
@@ -39,14 +39,14 @@ public class PersonnelController {
     // 204 : l'email est parti, il n'y a rien à renvoyer.
     @PostMapping("/{id}/invitation")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    @PreAuthorize("hasAuthority('PERSONNEL_GERER')")
     public void renvoyerInvitation(@PathVariable Integer id) {
         personnelService.renvoyerInvitation(id);
     }
 
     // Réservé à l'admin. Tout le personnel, actif ou non : le champ "actif" de chaque compte le précise.
     @GetMapping
-    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    @PreAuthorize("hasAuthority('PERSONNEL_GERER')")
     public List<UtilisateurDto> lister() {
         return personnelService.lister();
     }
@@ -55,7 +55,7 @@ public class PersonnelController {
     // Pour réactiver : renvoyer l'invitation (route ci-dessus).
     @PostMapping("/{id}/desactivation")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    @PreAuthorize("hasAuthority('PERSONNEL_GERER')")
     public void desactiver(@PathVariable Integer id) {
         personnelService.desactiver(id);
     }

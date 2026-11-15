@@ -27,21 +27,21 @@ public class DossierPatientController {
     // Réservé à la secrétaire. Elle est notée comme créatrice du dossier.
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('SECRETAIRE')")
+    @PreAuthorize("hasAuthority('DOSSIER_CREER')")
     public DossierPatientDto creer(@AuthenticationPrincipal UserDetails connecte,
             @Valid @RequestBody DossierPatientDto dto) {
         return dossierPatientService.creer(connecte.getUsername(), dto);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SECRETAIRE', 'MEDECIN')")
+    @PreAuthorize("hasAuthority('DOSSIER_LIRE')")
     public DossierPatientDto trouver(@PathVariable Integer id) {
         return dossierPatientService.trouver(id);
     }
 
     // Le dossier d'un patient, à partir de l'id du patient.
     @GetMapping("/patient/{patientId}")
-    @PreAuthorize("hasAnyRole('SECRETAIRE', 'MEDECIN')")
+    @PreAuthorize("hasAuthority('DOSSIER_LIRE')")
     public DossierPatientDto trouverParPatient(@PathVariable Integer patientId) {
         return dossierPatientService.trouverParPatient(patientId);
     }

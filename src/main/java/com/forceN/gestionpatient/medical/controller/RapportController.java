@@ -27,14 +27,14 @@ public class RapportController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    @PreAuthorize("hasAuthority('RAPPORT_GERER')")
     public RapportDto generer(@AuthenticationPrincipal UserDetails connecte,
             @Valid @RequestBody RapportDto dto) {
         return rapportService.generer(connecte.getUsername(), dto);
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    @PreAuthorize("hasAuthority('RAPPORT_GERER')")
     public List<RapportDto> lister() {
         return rapportService.lister();
     }

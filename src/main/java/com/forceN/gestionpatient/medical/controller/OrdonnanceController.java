@@ -18,7 +18,7 @@ public class OrdonnanceController {
     private final OrdonnanceService ordonnanceService;
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MEDECIN', 'PHARMACIEN')")
+    @PreAuthorize("hasAuthority('ORDONNANCE_LIRE')")
     public OrdonnanceDto trouver(@PathVariable Integer id) {
         return ordonnanceService.trouver(id);
     }
