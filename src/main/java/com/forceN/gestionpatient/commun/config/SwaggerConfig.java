@@ -31,8 +31,10 @@ public class SwaggerConfig {
      * Une route qui ne correspond à aucun groupe reste affichée, sous le nom de son contrôleur.
      */
     private static final Map<String, Tag> GROUPES = groupes(
+            "/annuaire", "Annuaire (public)", "Sans connexion : les établissements actifs et leurs médecins",
             "/auth", "Authentification", "Inscription, connexion, choix de l'établissement, activation et mot de passe oublié",
             "/utilisateurs", "Mon compte", "Profil et mot de passe de la personne connectée",
+            "/patients", "Mes cliniques (patient)", "Le patient rejoint une clinique et voit celles qu'il a rejointes",
             "/etablissements", "Établissements", "Réservé au super-administrateur : établissements et invitation de leur administrateur",
             "/personnel", "Personnel", "Réservé à l'administrateur, dans son établissement",
             "/dossiers", "Dossiers patients", "Partie 3",

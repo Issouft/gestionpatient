@@ -2,7 +2,9 @@ package com.forceN.gestionpatient.etablissement.service;
 
 import com.forceN.gestionpatient.commun.exception.ApplicationException;
 import com.forceN.gestionpatient.etablissement.dto.EtablissementDto;
+import com.forceN.gestionpatient.etablissement.dto.EtablissementPublicDto;
 import com.forceN.gestionpatient.etablissement.entities.Etablissement;
+import com.forceN.gestionpatient.etablissement.enums.TypeEtablissement;
 import com.forceN.gestionpatient.etablissement.exception.EtablissementErreur;
 import com.forceN.gestionpatient.etablissement.repository.EtablissementRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,9 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
- * Les établissements de la plateforme, gérés par le super-administrateur.
+ * Les établissements de la plateforme : gérés par le super-administrateur, et présentés au public dans l'annuaire.
  * Ce service ne donne accès à aucune donnée des établissements (personnel, patients, dossiers...) :
  * seulement à leur fiche (nom, type, adresse, contact, actif).
  */
@@ -52,6 +55,27 @@ public class EtablissementService {
         trouver(id).setActif(true);
     }
 
+    /**
+     * L'annuaire public : les établissements actifs, triés par nom, filtrés par type et par ville si on les donne.
+     * La ville ignore les majuscules et les espaces autour ("  thiès " trouve "Thiès").
+     */
+    @Transactional(readOnly = true)
+    public List<EtablissementPublicDto> annuaire(TypeEtablissement type, String ville) {
+        String villeMinuscules = (ville == null || ville.isBlank()) ? null : ville.trim().toLowerCase(Locale.ROOT);
+        return etablissementRepository.trouverActifs(type, villeMinuscules).stream()
+                .map(EtablissementPublicDto::fromEntity)
+                .toList();
+    }
+
+    /**
+     * Pour l'annuaire et le parcours du patient : 404 si l'établissement n'existe pas OU s'il est désactivé.
+     * Même réponse dans les deux cas : le public n'apprend pas qu'un établissement désactivé existe.
+     */
+    @Transactional(readOnly = true)
+    public void exigerActif(Integer id) {
+        etablissementRepository.findByIdAndActifTrue(id).orElseThrow(EtablissementService::introuvable);
+    }
+
     /** Pour les autres modules (ex. inviter un administrateur) : 404 si l'établissement n'existe pas. */
     @Transactional(readOnly = true)
     public void exigerExistant(Integer id) {
@@ -60,8 +84,11 @@ public class EtablissementService {
 
     /** 404 si l'établissement n'existe pas. */
     Etablissement trouver(Integer id) {
-        return etablissementRepository.findById(id)
-                .orElseThrow(() -> new ApplicationException(EtablissementErreur.ETABLISSEMENT_INTROUVABLE,
-                        "Aucun établissement ne porte cet identifiant"));
+        return etablissementRepository.findById(id).orElseThrow(EtablissementService::introuvable);
+    }
+
+    private static ApplicationException introuvable() {
+        return new ApplicationException(EtablissementErreur.ETABLISSEMENT_INTROUVABLE,
+                "Aucun établissement ne porte cet identifiant");
     }
 }

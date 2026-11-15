@@ -23,8 +23,9 @@ class RolePermissionsTest {
     }
 
     @Test
-    void lePatientNePeutQueSoumettreSesDemandes() {
-        assertThat(RolePermissions.de(Role.PATIENT)).containsExactly(Permission.DEMANDE_SOUMETTRE);
+    void lePatientNePeutQueRejoindreUneCliniqueEtSoumettreSesDemandes() {
+        assertThat(RolePermissions.de(Role.PATIENT))
+                .containsExactlyInAnyOrder(Permission.ETABLISSEMENT_REJOINDRE, Permission.DEMANDE_SOUMETTRE);
     }
 
     @Test

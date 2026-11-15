@@ -2,9 +2,12 @@ package com.forceN.gestionpatient.commun.exception;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -46,6 +50,25 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "Un ou plusieurs champs sont invalides.", "DONNEES_INVALIDES");
         reponse.setProperty("erreurs", erreurs);
         return ResponseEntity.badRequest().body(reponse);
+    }
+
+    // Un paramètre de l'adresse n'a pas le bon type : /personnel/abc, ?type=HOPITAL...
+    // Pour une liste de valeurs (enum), la réponse donne les valeurs possibles. La valeur reçue n'est pas recopiée.
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(TypeMismatchException exception,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        String parametre = exception instanceof MethodArgumentTypeMismatchException erreur
+                ? erreur.getName() : exception.getPropertyName();
+        Class<?> typeAttendu = exception.getRequiredType();
+        String detail = "Le paramètre « " + parametre + " » a une valeur invalide.";
+        if (typeAttendu != null && typeAttendu.isEnum()) {
+            detail += " Valeurs possibles : " + Arrays.stream(typeAttendu.getEnumConstants())
+                    .map(Object::toString).collect(Collectors.joining(", ")) + ".";
+        } else if (typeAttendu == Integer.class || typeAttendu == Long.class) {
+            detail += " Un nombre entier est attendu.";
+        }
+        return ResponseEntity.badRequest()
+                .body(creerReponse(HttpStatus.BAD_REQUEST, "Paramètre invalide", detail, "PARAMETRE_INVALIDE"));
     }
 
     // Relancées pour que Spring Security les traite, sinon elles deviendraient des erreurs 500.
