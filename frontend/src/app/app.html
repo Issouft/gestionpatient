@@ -1,0 +1,39 @@
+<mat-toolbar class="barre">
+  <a class="marque" routerLink="/accueil">
+    <mat-icon>local_hospital</mat-icon>
+    <span>GestionPatient</span>
+  </a>
+
+  <span class="espace"></span>
+
+  @if (estConnecte()) {
+    @if (etablissement(); as etab) {
+      <span class="etablissement">{{ etab.etablissementNom }}</span>
+    }
+    <button mat-button [matMenuTriggerFor]="menuCompte" aria-label="Menu du compte">
+      <mat-icon>account_circle</mat-icon>
+      {{ profil()?.prenom }}
+    </button>
+    <mat-menu #menuCompte="matMenu">
+      <a mat-menu-item routerLink="/profil">
+        <mat-icon>person</mat-icon>
+        <span>Mon profil</span>
+      </a>
+      @if (plusieursEtablissements()) {
+        <a mat-menu-item routerLink="/choix-etablissement">
+          <mat-icon>swap_horiz</mat-icon>
+          <span>Changer d'établissement</span>
+        </a>
+      }
+      <mat-divider />
+      <button mat-menu-item (click)="seDeconnecter()">
+        <mat-icon>logout</mat-icon>
+        <span>Se déconnecter</span>
+      </button>
+    </mat-menu>
+  }
+</mat-toolbar>
+
+<main>
+  <router-outlet />
+</main>

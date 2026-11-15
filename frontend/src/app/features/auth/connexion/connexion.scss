@@ -1,0 +1,11 @@
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+}
+
+button[type='submit'] {
+  align-self: stretch;
+  margin-top: 8px;
+}

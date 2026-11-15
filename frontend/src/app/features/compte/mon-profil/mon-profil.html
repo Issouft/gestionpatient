@@ -1,0 +1,58 @@
+@if (profil(); as moi) {
+  <section class="page">
+    <h1>Mon profil</h1>
+
+    <mat-card appearance="outlined">
+      <mat-card-content>
+        <mat-list>
+          <mat-list-item>
+            <span matListItemTitle>Nom</span>
+            <span matListItemLine>{{ moi.prenom }} {{ moi.nom }}</span>
+          </mat-list-item>
+          <mat-list-item>
+            <span matListItemTitle>Email</span>
+            <span matListItemLine>{{ moi.email }}</span>
+          </mat-list-item>
+          <mat-list-item>
+            <span matListItemTitle>Rôle</span>
+            <span matListItemLine>{{ libelleRole() }}</span>
+          </mat-list-item>
+
+          @if (moi.dateNaissance) {
+            <mat-list-item>
+              <span matListItemTitle>Date de naissance</span>
+              <span matListItemLine>
+                {{ moi.dateNaissance | date: 'longDate' }}
+                @if (moi.age !== undefined) { ({{ moi.age }} ans) }
+              </span>
+            </mat-list-item>
+          }
+          @if (moi.telephone) {
+            <mat-list-item>
+              <span matListItemTitle>Téléphone</span>
+              <span matListItemLine>{{ moi.telephone }}</span>
+            </mat-list-item>
+          }
+          @if (moi.adresse) {
+            <mat-list-item>
+              <span matListItemTitle>Adresse</span>
+              <span matListItemLine>{{ moi.adresse }}</span>
+            </mat-list-item>
+          }
+          @if (moi.specialite) {
+            <mat-list-item>
+              <span matListItemTitle>Spécialité</span>
+              <span matListItemLine>{{ moi.specialite }}</span>
+            </mat-list-item>
+          }
+          @if (moi.numeroOrdre) {
+            <mat-list-item>
+              <span matListItemTitle>Numéro d'ordre</span>
+              <span matListItemLine>{{ moi.numeroOrdre }}</span>
+            </mat-list-item>
+          }
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
+  </section>
+}

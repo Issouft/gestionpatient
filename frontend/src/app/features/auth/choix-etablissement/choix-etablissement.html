@@ -1,0 +1,29 @@
+<mat-card class="carte-centree" appearance="outlined">
+  <mat-card-header>
+    <mat-card-title>Choisir l'établissement</mat-card-title>
+    <mat-card-subtitle>Où travaillez-vous pendant cette session ?</mat-card-subtitle>
+  </mat-card-header>
+
+  @if (enCours()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <mat-card-content>
+    @if (erreur(); as message) {
+      <p class="message message-erreur" role="alert">{{ message }}</p>
+    }
+
+    <mat-action-list>
+      @for (acces of etablissements(); track acces.etablissementId) {
+        <button mat-list-item (click)="choisir(acces)" [disabled]="enCours()">
+          <mat-icon matListItemIcon>local_hospital</mat-icon>
+          <span matListItemTitle>{{ acces.etablissementNom }}</span>
+          <span matListItemLine>
+            {{ roles(acces) }}
+            @if (acces.etablissementId === courant()?.etablissementId) { · établissement actuel }
+          </span>
+        </button>
+      }
+    </mat-action-list>
+  </mat-card-content>
+</mat-card>

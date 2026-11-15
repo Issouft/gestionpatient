@@ -37,9 +37,12 @@ Rendez-vous → Consultation → Ordonnance → Demande de médicament
 
 ### Comment c'est construit
 
-Ce projet est la partie serveur de l'application. C'est une **API** : un programme qui reçoit des demandes et répond avec des données au format JSON. Il ne contient pas d'écrans pour l'instant.
+Le projet a deux parties, dans le même dépôt :
 
-**Technologies :** Java 21, Spring Boot, PostgreSQL et Maven.
+- **le backend** (dossier racine) : une **API**, un programme qui reçoit des demandes et répond avec des données au format JSON ;
+- **le frontend** (dossier `frontend/`) : les écrans, dans le navigateur. Ils appellent l'API. Voir [frontend/README.md](frontend/README.md).
+
+**Technologies :** Java 21, Spring Boot, PostgreSQL et Maven pour le backend ; Angular 21 et Angular Material pour le frontend.
 
 ## Sommaire
 
@@ -58,6 +61,7 @@ Pour comprendre comment le code est organisé, lisez [ARCHITECTURE.md](ARCHITECT
 - **Java 21**
 - **PostgreSQL**, le logiciel qui stocke les données
 - **Git**
+- **Node.js 20 ou plus**, pour le frontend (`node -v` affiche la version)
 - **Un éditeur**, par exemple VS Code
 
 Maven, l'outil qui construit le projet, n'a pas besoin d'être installé : le projet contient déjà le programme `mvnw`, qui s'en occupe.
@@ -140,6 +144,21 @@ Sous Windows, remplacez `./mvnw` par `mvnw.cmd` dans les commandes.
 ```
 
 L'application répond ensuite à l'adresse `http://localhost:8081`. Appuyez sur `Ctrl+C` pour l'arrêter.
+
+### Démarrer le frontend
+
+Dans un **second terminal**, l'API étant démarrée :
+
+```bash
+cd frontend
+npm ci      # la première fois, puis après chaque changement de package-lock.json
+npm start
+```
+
+Ouvrez **http://localhost:4200**. Les écrans appellent l'API sur le port 8081. Détails, tests et organisation du code : [frontend/README.md](frontend/README.md).
+
+- L'API n'accepte les appels du navigateur que depuis l'adresse du frontend (CORS). En production, mettez la vraie adresse dans la variable `FRONTEND_URL`.
+- Les liens des emails (activation, mot de passe oublié) mènent aussi à cette adresse.
 
 ### Lancer les tests
 
@@ -436,7 +455,7 @@ Le personnel ne s'inscrit pas lui-même : c'est l'administrateur qui crée son c
 
 Le compte est créé **inactif** : il ne peut pas encore se connecter. Un email est envoyé à l'adresse indiquée. Regardez aussi dans les spams. Notez l'`id` de la réponse : il sert à renvoyer l'invitation (étape 4).
 
-**3. Activer le compte :** le lien de l'email mène à une page qui n'existe pas encore. Faites un clic droit sur le lien, puis *Copier l'adresse du lien*, et gardez tout ce qui suit `jeton=`. Ne recopiez pas le jeton à la main : des caractères comme `I`, `l` et `1` se confondent facilement. Puis envoyez `POST http://localhost:8081/auth/activation`, **sans jeton** (*No Auth*) :
+**3. Activer le compte :** le lien de l'email mène à la page d'activation du frontend, qui n'existe pas encore (elle arrive à l'étape suivante du frontend). Faites un clic droit sur le lien, puis *Copier l'adresse du lien*, et gardez tout ce qui suit `jeton=`. Ne recopiez pas le jeton à la main : des caractères comme `I`, `l` et `1` se confondent facilement. Puis envoyez `POST http://localhost:8081/auth/activation`, **sans jeton** (*No Auth*) :
 
 ```json
 {

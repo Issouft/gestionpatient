@@ -1,0 +1,28 @@
+@if (profil(); as moi) {
+  <section class="page">
+    <h1>Bonjour {{ moi.prenom }}</h1>
+    <p class="sous-titre">
+      {{ libelleRole() }}
+      @if (etablissement(); as etab) { · {{ etab.etablissementNom }} }
+    </p>
+
+    @if (sansEtablissement()) {
+      <p class="message message-info" role="status">
+        Vous n'avez accès à aucun établissement pour le moment. Contactez l'administrateur de votre établissement.
+      </p>
+    }
+
+    <div class="grille-cartes">
+      <mat-card appearance="outlined">
+        <mat-card-header>
+          <mat-icon mat-card-avatar>person</mat-icon>
+          <mat-card-title>Mon profil</mat-card-title>
+          <mat-card-subtitle>Vos informations personnelles</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-actions>
+          <a mat-button routerLink="/profil">Voir mon profil</a>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  </section>
+}

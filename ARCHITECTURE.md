@@ -84,6 +84,8 @@ Le fichier `dto/Consultation.java` sera renommé `ConsultationDto.java`, pour su
 
 Les dossiers `controller`, `service` et `repository` sont prêts mais encore vides. Le fichier `.gitkeep` qu'ils contiennent sert seulement à les conserver dans Git, car Git n'enregistre pas les dossiers vides. La façon de les remplir sera ajoutée à ce document plus tard.
 
+Le frontend Angular est dans le dossier `frontend/`, organisé de la même façon : `core/` pour ce qui sert partout (session, jeton, erreurs, modèles) et `features/` avec un dossier par domaine. Voir [frontend/README.md](frontend/README.md).
+
 ## 3. Les notions à connaître
 
 ### Une entité
