@@ -26,15 +26,18 @@ com.forceN.gestionpatient
 ├── etablissement                   ← socle SaaS : les établissements de la plateforme
 │   ├── entities   : Etablissement, Affiliation (tel compte a tel rôle dans tel établissement)
 │   ├── enums      : TypeEtablissement (CLINIQUE, CABINET, PHARMACIE, LABORATOIRE), StatutAffiliation
+│   ├── dto        : AccesEtablissementDto
+│   ├── service    : AffiliationService (où une personne peut travailler : utilisé par la sécurité)
 │   └── repository : EtablissementRepository, AffiliationRepository
 │
 ├── securite                        ← Partie 1
 │   ├── config     : SecurityConfig
 │   ├── permission : Permission, RolePermissions (les droits de chaque rôle)
-│   ├── jwt        : JwtService, JwtFiltre
+│   ├── jwt        : JwtService, JwtFiltre, JetonLu
 │   ├── controller : AuthController
-│   ├── service    : AuthService, UtilisateurConnecteService
-│   ├── dto        : ConnexionRequete, ConnexionReponse, ChoixMotDePasseRequete, MotDePasseOublieRequete
+│   ├── service    : AuthService, UtilisateurConnecteService, CompteAuthentifie (la personne connectée)
+│   ├── dto        : ConnexionRequete, ConnexionReponse, ChoixEtablissementRequete,
+│   │                ChoixMotDePasseRequete, MotDePasseOublieRequete
 │   └── exception  : SecuriteErreur, SecuriteErreurHandler
 │
 ├── utilisateur                     ← Partie 1
@@ -190,6 +193,20 @@ public class StockInsuffisantException extends ApplicationException {
 ```
 
 Un **jeton JWT** est comme un badge signé par le serveur. Il est valable 60 minutes. Ensuite, il faut se reconnecter.
+
+### L'établissement dans le jeton (SaaS)
+
+Le personnel travaille **dans un établissement à la fois**. Son jeton contient l'email et l'`id` de cet établissement, **mais jamais son rôle ni ses permissions**.
+
+À chaque requête, `JwtFiltre` relit en base le compte et les affiliations (via `AffiliationService`), puis calcule les permissions avec `RolePermissions` à partir du rôle de la personne **dans cet établissement**. Ainsi, une affiliation suspendue, un établissement désactivé, un compte désactivé ou un mot de passe changé coupent l'accès dès la requête suivante, sans attendre la fin du jeton.
+
+| Qui | Son jeton | Ses permissions |
+|---|---|---|
+| Patient | Sans établissement : il agit pour lui-même, dans toutes ses cliniques | Celles du rôle `PATIENT` |
+| Personnel avec un seul établissement | Avec cet établissement, dès la connexion | Celles de ses rôles dans cet établissement |
+| Personnel avec plusieurs établissements | Sans établissement à la connexion, puis avec celui choisi par `POST /auth/etablissement` | Aucune tant qu'il n'a pas choisi : `403 ETABLISSEMENT_NON_CHOISI` |
+
+Dans un contrôleur, `@AuthenticationPrincipal CompteAuthentifie connecte` donne l'email (`connecte.email()`) et l'établissement de la session (`connecte.etablissementId()`). Les contrôleurs qui reçoivent `UserDetails` continuent de marcher.
 
 **Toutes les routes sont fermées par défaut.** Seules trois routes sont publiques, car la personne n'a pas encore de jeton de connexion :
 

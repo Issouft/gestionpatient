@@ -182,7 +182,8 @@ Avec Postman, par exemple, l'application démarrée.
 | Route | Accès | Ce qu'elle fait |
 |---|---|---|
 | `POST /auth/inscription` | Publique | Crée un compte patient. Répond `201 Created` |
-| `POST /auth/connexion` | Publique | Vérifie l'email et le mot de passe, puis renvoie un jeton |
+| `POST /auth/connexion` | Publique | Vérifie l'email et le mot de passe, puis renvoie un jeton et, pour le personnel, ses établissements |
+| `POST /auth/etablissement` | Avec jeton | Le personnel choisit (ou change) l'établissement où il travaille. Renvoie un nouveau jeton |
 | `GET /utilisateurs/moi` | Avec jeton | Renvoie le profil de la personne connectée, sans mot de passe. Un patient y voit aussi sa date de naissance, son âge, son téléphone et son adresse ; un médecin, sa spécialité et son numéro d'ordre |
 | `PUT /utilisateurs/moi` | Avec jeton | Modifie le nom et le prénom ; pour un patient, aussi le téléphone et l'adresse. Renvoie le profil à jour |
 | `PUT /utilisateurs/moi/mot-de-passe` | Avec jeton | Change le mot de passe de la personne connectée, après vérification de l'ancien. Répond `204 No Content` |
@@ -220,7 +221,25 @@ Tous les champs sont obligatoires. Le mot de passe doit contenir entre 8 et 72 c
 }
 ```
 
-La réponse contient le jeton. Copiez-le.
+La réponse contient le jeton (`jeton`). Copiez-le. Pour un patient, `etablissementId` vaut `null` et la liste `etablissements` est vide : c'est normal, un patient n'a pas d'établissement à choisir.
+
+**Pour le personnel**, la réponse liste aussi les établissements où il travaille, avec ses rôles :
+
+```json
+{
+  "jeton": "eyJhbGciOi...",
+  "etablissementId": null,
+  "etablissements": [
+    { "etablissementId": 1, "etablissementNom": "Clinique A", "roles": ["MEDECIN"] },
+    { "etablissementId": 4, "etablissementNom": "Clinique B", "roles": ["MEDECIN"] }
+  ]
+}
+```
+
+- **Un seul établissement :** `etablissementId` est déjà rempli, et le jeton permet de travailler tout de suite.
+- **Plusieurs établissements :** `etablissementId` vaut `null`. Choisissez-en un avec `POST http://localhost:8081/auth/etablissement`, avec ce jeton (*Bearer Token*) et ce corps : `{"etablissementId": 4}`. La réponse contient un **nouveau jeton** : utilisez-le pour la suite. La même route sert à changer d'établissement.
+
+Les comptes qui existaient avant les établissements sont rattachés à la « Clinique principale » : ils n'ont rien à choisir.
 
 **3. Voir son profil :** `GET http://localhost:8081/utilisateurs/moi`, sans corps. Dans l'onglet *Authorization*, choisissez *Bearer Token* et collez le jeton. Sans jeton, la réponse est `401`.
 
@@ -481,6 +500,9 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 | Réponse `409` avec le code `NUMERO_ORDRE_DEJA_UTILISE` | Un autre médecin a déjà ce numéro d'ordre | Vérifiez le numéro d'ordre |
 | Réponse `409` avec le code `DONNEE_DEJA_UTILISEE` | La base a refusé une valeur déjà prise. Arrive surtout quand la même demande est envoyée deux fois en même temps (double clic) | Vérifiez si le compte n'a pas déjà été créé |
 | Réponse `503` avec le code `ENVOI_EMAIL_IMPOSSIBLE` | Le serveur d'emails n'a pas répondu. Rien n'a été créé | Vérifiez `spring.mail.username` et `spring.mail.password` dans `.env` et la connexion Internet, puis réessayez |
+| Réponse `403` avec le code `ETABLISSEMENT_NON_CHOISI` | Vous travaillez dans plusieurs établissements et n'en avez pas encore choisi un | Envoyez `POST /auth/etablissement`, puis utilisez le nouveau jeton (voir « Essayer l'API », étape 2) |
+| Réponse `403` avec le code `ETABLISSEMENT_NON_AUTORISE` | Vous n'êtes pas affilié à cet établissement, ou votre accès y est suspendu | Choisissez un établissement de la liste reçue à la connexion |
+| Réponse `401` avec le code `ACCES_ETABLISSEMENT_RETIRE` | Votre accès à l'établissement du jeton a été retiré, ou l'établissement a été désactivé | Reconnectez-vous et choisissez un autre établissement |
 | Réponse `403` | Vous êtes connecté, mais votre rôle n'a pas la permission d'utiliser cette route (voir `RolePermissions`) | Connectez-vous avec le bon compte, par exemple l'administrateur pour `POST /personnel` |
 | Réponse `400` avec le code `MOT_DE_PASSE_INCORRECT` | L'ancien mot de passe envoyé pour en changer est faux | Vérifiez l'ancien mot de passe. Ce n'est pas un `401` : la session est toujours valable |
 | Réponse `400` avec le code `JETON_INVALIDE` | Le lien reçu par email (invitation ou mot de passe oublié) est faux, a expiré ou a déjà servi | Copiez le lien du **dernier** email reçu, avec un clic droit plutôt qu'à la main. S'il a expiré : pour une invitation, l'administrateur peut la renvoyer (voir « Créer un membre du personnel », étape 4) ; pour un mot de passe oublié, refaites la demande |
