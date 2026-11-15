@@ -6,6 +6,7 @@ import com.forceN.gestionpatient.etablissement.enums.StatutAffiliation;
 import com.forceN.gestionpatient.outils.SessionsDeTest;
 import com.forceN.gestionpatient.securite.service.EmailService;
 import com.forceN.gestionpatient.utilisateur.entities.Administrateur;
+import com.forceN.gestionpatient.utilisateur.entities.Medecin;
 import com.forceN.gestionpatient.utilisateur.entities.Patient;
 import com.forceN.gestionpatient.utilisateur.entities.Secretaire;
 import com.forceN.gestionpatient.utilisateur.entities.Utilisateur;
@@ -20,6 +21,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -129,7 +131,75 @@ class PersonnelEtablissementTest {
         verify(emailService, never()).envoyerInvitation(anyString(), anyString(), anyString());
     }
 
+    // ---------- Suspension et réactivation ----------
+
+    @Test
+    void laSuspensionNeCoupeQueLAccesACetEtablissement() throws Exception {
+        // Un médecin travaille dans les cliniques A et B.
+        Utilisateur medecin = creer(Medecin.builder().email("medecin.ab@test.invalid")
+                .specialite("Cardiologie").numeroOrdre("TEST-AB-1"), true);
+        String jetonMedecinA = sessions.jeton(medecin, cliniqueA);
+        String jetonMedecinB = sessions.jeton(medecin, cliniqueB);
+
+        suspendre(medecin).andExpect(status().isNoContent());
+
+        // Coupé dans A, tout de suite...
+        moi(jetonMedecinA)
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("ACCES_ETABLISSEMENT_RETIRE"));
+        // ... mais il travaille toujours dans B, et son compte reste actif.
+        moi(jetonMedecinB).andExpect(status().isOk());
+        assertThat(utilisateurRepository.findById(medecin.getId()).orElseThrow().isActif()).isTrue();
+    }
+
+    @Test
+    void laReactivationRendLAccesAvecLeMemeMotDePasse() throws Exception {
+        Utilisateur secretaire = creer(Secretaire.builder().email("secretaire.a@test.invalid"), true);
+        String jetonSecretaire = sessions.jeton(secretaire, cliniqueA);
+        suspendre(secretaire).andExpect(status().isNoContent());
+        moi(jetonSecretaire).andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/personnel/" + secretaire.getId() + "/reactivation")
+                        .header("Authorization", "Bearer " + jetonAdminA))
+                .andExpect(status().isNoContent());
+
+        moi(jetonSecretaire).andExpect(status().isOk());
+        verify(emailService, never()).envoyerInvitation(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void laListeIndiqueLeStatutDansLEtablissement() throws Exception {
+        Utilisateur secretaire = creer(Secretaire.builder().email("secretaire.a@test.invalid"), true);
+        sessions.affilier(secretaire, cliniqueA);
+        suspendre(secretaire).andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/personnel").header("Authorization", "Bearer " + jetonAdminA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == " + secretaire.getId() + ")].statutDansEtablissement")
+                        .value(hasItem("SUSPENDUE")))
+                .andExpect(jsonPath("$[?(@.id == " + secretaire.getId() + ")].actif").value(hasItem(true)));
+        // Le statut n'apparaît que dans la liste du personnel.
+        moi(jetonAdminA).andExpect(jsonPath("$.statutDansEtablissement").doesNotExist());
+    }
+
+    @Test
+    void onNeReactivePasLePersonnelDUnAutreEtablissement() throws Exception {
+        mockMvc.perform(post("/personnel/" + secretaireB.getId() + "/reactivation")
+                        .header("Authorization", "Bearer " + jetonAdminA))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("UTILISATEUR_INTROUVABLE"));
+    }
+
     // ---------- Outils ----------
+
+    private ResultActions suspendre(Utilisateur membre) throws Exception {
+        return mockMvc.perform(post("/personnel/" + membre.getId() + "/desactivation")
+                .header("Authorization", "Bearer " + jetonAdminA));
+    }
+
+    private ResultActions moi(String jeton) throws Exception {
+        return mockMvc.perform(get("/utilisateurs/moi").header("Authorization", "Bearer " + jeton));
+    }
 
     /** Le rôle est fixé par @PrePersist. Le mot de passe n'est pas utilisé ici. */
     private Utilisateur creer(Utilisateur.UtilisateurBuilder<?, ?> compte, boolean actif) {

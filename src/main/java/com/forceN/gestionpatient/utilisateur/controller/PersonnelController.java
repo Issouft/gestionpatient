@@ -57,12 +57,20 @@ public class PersonnelController {
         return personnelService.lister(connecte.etablissementId());
     }
 
-    // Réservé à l'admin. La personne ne peut plus se connecter. 204, même si le compte était déjà inactif.
-    // Pour réactiver : renvoyer l'invitation (route ci-dessus).
+    // Réservé à l'admin. Suspend la personne dans SON établissement seulement : elle continue de travailler ailleurs.
+    // 204, même si elle était déjà suspendue. Pour lui rendre l'accès : la route de réactivation ci-dessous.
     @PostMapping("/{id}/desactivation")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAuthority('PERSONNEL_GERER')")
     public void desactiver(@AuthenticationPrincipal CompteAuthentifie connecte, @PathVariable Integer id) {
         personnelService.desactiver(id, connecte.etablissementId());
+    }
+
+    // Réservé à l'admin. Rend l'accès à l'établissement, avec le même mot de passe. 204, même s'il n'était pas suspendu.
+    @PostMapping("/{id}/reactivation")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAuthority('PERSONNEL_GERER')")
+    public void reactiver(@AuthenticationPrincipal CompteAuthentifie connecte, @PathVariable Integer id) {
+        personnelService.reactiver(id, connecte.etablissementId());
     }
 }

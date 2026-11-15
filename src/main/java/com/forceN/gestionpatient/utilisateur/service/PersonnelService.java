@@ -3,6 +3,7 @@ package com.forceN.gestionpatient.utilisateur.service;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.forceN.gestionpatient.commun.exception.ApplicationException;
+import com.forceN.gestionpatient.etablissement.enums.StatutAffiliation;
 import com.forceN.gestionpatient.etablissement.service.AffiliationService;
 import com.forceN.gestionpatient.securite.exception.SecuriteErreur;
 import com.forceN.gestionpatient.securite.service.EmailService;
@@ -29,7 +31,8 @@ import com.forceN.gestionpatient.utilisateur.repository.UtilisateurRepository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Gestion du personnel (médecin, secrétaire, pharmacien) par l'administrateur : création, invitation, liste, désactivation.
+ * Gestion du personnel (médecin, secrétaire, pharmacien) par l'administrateur : création, invitation, liste,
+ * suspension et réactivation.
  * Tout se limite à l'établissement de l'administrateur (celui de son jeton) : il ne voit ni ne touche
  * le personnel des autres établissements.
  */
@@ -104,26 +107,43 @@ public class PersonnelService {
         emailService.envoyerInvitation(utilisateur.getEmail(), utilisateur.getPrenom(), jeton);
     }
 
-    /** Liste le personnel de l'établissement (médecins, secrétaires, pharmaciens), actif ou non, trié par nom. */
+    /**
+     * Liste le personnel de l'établissement (médecins, secrétaires, pharmaciens), trié par nom.
+     * Chacun indique son statut dans l'établissement (ACTIVE ou SUSPENDUE) et si son compte peut se connecter (actif).
+     */
     @Transactional(readOnly = true)
     public List<UtilisateurDto> lister(Integer etablissementId) {
         exigerEtablissement(etablissementId);
+        Map<Integer, StatutAffiliation> statuts = affiliationService.statutsDans(etablissementId, ROLES_PERSONNEL);
         return affiliationService.comptesDe(etablissementId, ROLES_PERSONNEL).stream()
-                .map(utilisateurService::convertiUtilisateurDto)
+                .map(utilisateur -> {
+                    UtilisateurDto dto = utilisateurService.convertiUtilisateurDto(utilisateur);
+                    dto.setStatutDansEtablissement(statuts.get(utilisateur.getId()));
+                    return dto;
+                })
                 .toList();
     }
 
     /**
-     * Désactive le compte d'un membre du personnel : il ne peut plus se connecter,
-     * et son jeton de connexion actuel est refusé dès la requête suivante (voir JwtFiltre).
-     * Pour le réactiver, l'administrateur lui renvoie une invitation : la personne choisit un nouveau mot de passe.
+     * Suspend un membre du personnel DANS CET ÉTABLISSEMENT seulement : son jeton pour cet établissement
+     * est refusé dès la requête suivante (voir JwtFiltre), mais il continue de travailler dans ses autres
+     * établissements, et son compte reste actif. Un administrateur ne peut donc pas couper l'accès d'une personne ailleurs.
+     * Ne fait rien si elle est déjà suspendue (204 quand même).
      */
     @Transactional
     public void desactiver(Integer id, Integer etablissementId) {
         Utilisateur utilisateur = trouverPersonnel(id, etablissementId);
-        utilisateur.setActif(false);
-        // Un lien encore valable (invitation ou mot de passe oublié) ne doit pas pouvoir le réactiver.
-        jetonActivationService.annulerJetons(utilisateur);
+        affiliationService.changerStatut(utilisateur.getId(), etablissementId, ROLES_PERSONNEL, StatutAffiliation.SUSPENDUE);
+    }
+
+    /**
+     * Rend à un membre du personnel suspendu l'accès à cet établissement, avec le même mot de passe.
+     * Ne fait rien s'il n'était pas suspendu (204 quand même).
+     */
+    @Transactional
+    public void reactiver(Integer id, Integer etablissementId) {
+        Utilisateur utilisateur = trouverPersonnel(id, etablissementId);
+        affiliationService.changerStatut(utilisateur.getId(), etablissementId, ROLES_PERSONNEL, StatutAffiliation.ACTIVE);
     }
 
     /**

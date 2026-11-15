@@ -30,6 +30,13 @@ public interface AffiliationRepository extends JpaRepository<Affiliation, Intege
             """)
     List<Affiliation> trouverAccesActifs(Integer utilisateurId);
 
+    // Les affiliations d'une personne dans un établissement, pour ces rôles (pour les suspendre ou les réactiver).
+    List<Affiliation> findByUtilisateurIdAndEtablissementIdAndRoleIn(Integer utilisateurId, Integer etablissementId,
+            Collection<Role> roles);
+
+    // Toutes les affiliations d'un établissement pour ces rôles (pour afficher le statut de chacun dans la liste).
+    List<Affiliation> findByEtablissementIdAndRoleIn(Integer etablissementId, Collection<Role> roles);
+
     // Vrai si la personne fait partie de l'établissement avec l'un de ces rôles, quel que soit le statut.
     boolean existsByUtilisateurIdAndEtablissementIdAndRoleIn(Integer utilisateurId, Integer etablissementId,
             Collection<Role> roles);

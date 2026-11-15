@@ -156,7 +156,7 @@ class CompteTest {
     }
 
     @Test
-    void unCompteDesactivePerdSonAccesToutDeSuite() throws Exception {
+    void unMembreSuspenduPerdSonAccesALEtablissementToutDeSuite() throws Exception {
         String jetonAdmin = jetonAdministrateur();
         Utilisateur secretaire = creer(Secretaire.builder().email("secretaire.compte@test.invalid"));
         // La secrétaire travaille dans la même clinique que l'administrateur.
@@ -167,7 +167,8 @@ class CompteTest {
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/utilisateurs/moi").header("Authorization", "Bearer " + jetonSecretaire))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("ACCES_ETABLISSEMENT_RETIRE"));
     }
 
     @Test
