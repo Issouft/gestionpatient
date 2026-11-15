@@ -1,0 +1,36 @@
+<section class="page">
+  <h1 class="page-titre">Où travaillez-vous aujourd'hui ?</h1>
+  <p class="sous-titre">Choisissez l'établissement de cette session. Vous pourrez en changer depuis le menu de votre compte.</p>
+
+  @if (erreur(); as message) {
+    <p class="message message-erreur" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      {{ message }}
+    </p>
+  }
+
+  <div class="grille-cartes">
+    @for (acces of etablissements(); track acces.etablissementId) {
+      <button
+        type="button"
+        class="carte-action"
+        [class.actuel]="acces.etablissementId === courant()?.etablissementId"
+        [disabled]="enCours()"
+        (click)="choisir(acces)"
+      >
+        <span class="pastille"><mat-icon>local_hospital</mat-icon></span>
+        <h3>{{ acces.etablissementNom }}</h3>
+        <span class="roles">
+          @for (role of acces.roles; track role) {
+            <span class="etiquette">{{ libelles[role] }}</span>
+          }
+        </span>
+        @if (acces.etablissementId === courant()?.etablissementId) {
+          <span class="lien-fleche"><mat-icon>check_circle</mat-icon> Établissement actuel</span>
+        } @else {
+          <span class="lien-fleche">Travailler ici <mat-icon>arrow_forward</mat-icon></span>
+        }
+      </button>
+    }
+  </div>
+</section>

@@ -1,0 +1,82 @@
+@if (!pleinEcran()) {
+  <header class="barre">
+    <a class="logo" [routerLink]="estConnecte() ? '/accueil' : '/annuaire'">
+      <span class="logo-icone"><mat-icon>health_and_safety</mat-icon></span>
+      <span class="logo-nom">GestionPatient</span>
+    </a>
+
+    <nav class="navigation" aria-label="Navigation principale">
+      <a class="lien-nav" routerLink="/annuaire" routerLinkActive="actif">
+        <mat-icon>travel_explore</mat-icon><span>Trouver une clinique</span>
+      </a>
+      @if (estPatient()) {
+        <a class="lien-nav" routerLink="/mes-cliniques" routerLinkActive="actif">
+          <mat-icon>local_hospital</mat-icon><span>Mes cliniques</span>
+        </a>
+      }
+      @if (estAdministrateur()) {
+        <a class="lien-nav" routerLink="/personnel" routerLinkActive="actif">
+          <mat-icon>groups</mat-icon><span>Personnel</span>
+        </a>
+      }
+      @if (estSuperAdministrateur()) {
+        <a class="lien-nav" routerLink="/etablissements" routerLinkActive="actif">
+          <mat-icon>domain</mat-icon><span>Établissements</span>
+        </a>
+      }
+    </nav>
+
+    <span class="espace"></span>
+
+    @if (estConnecte()) {
+      @if (etablissement(); as etab) {
+        <span class="etiquette etablissement">
+          <mat-icon>local_hospital</mat-icon>
+          {{ etab.etablissementNom }}
+        </span>
+      }
+
+      <button class="compte" [matMenuTriggerFor]="menuCompte" aria-label="Menu du compte">
+        <span class="avatar">{{ initiales() }}</span>
+        <span class="compte-texte">
+          <strong>{{ profil()?.prenom }} {{ profil()?.nom }}</strong>
+          <span>{{ libelleRole() }}</span>
+        </span>
+        <mat-icon class="chevron">expand_more</mat-icon>
+      </button>
+
+      <mat-menu #menuCompte="matMenu" xPosition="before">
+        <a mat-menu-item routerLink="/accueil">
+          <mat-icon>dashboard</mat-icon>
+          <span>Accueil</span>
+        </a>
+        <a mat-menu-item routerLink="/profil">
+          <mat-icon>person_outline</mat-icon>
+          <span>Mon profil</span>
+        </a>
+        @if (plusieursEtablissements()) {
+          <a mat-menu-item routerLink="/choix-etablissement">
+            <mat-icon>swap_horiz</mat-icon>
+            <span>Changer d'établissement</span>
+          </a>
+        }
+        <mat-divider />
+        <button mat-menu-item (click)="seDeconnecter()">
+          <mat-icon>logout</mat-icon>
+          <span>Se déconnecter</span>
+        </button>
+      </mat-menu>
+    } @else {
+      <a mat-button routerLink="/connexion">Se connecter</a>
+      <a mat-flat-button class="bouton-marque bouton-compact bouton-inscription" routerLink="/inscription">Créer un compte</a>
+    }
+  </header>
+}
+
+<main [class.avec-barre]="!pleinEcran()">
+  <router-outlet />
+</main>
+
+@if (!pleinEcran()) {
+  <footer class="pied">© GestionPatient · Vos données de santé restent dans votre clinique.</footer>
+}

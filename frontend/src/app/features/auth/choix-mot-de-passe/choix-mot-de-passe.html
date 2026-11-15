@@ -1,0 +1,62 @@
+<app-page-acces [titre]="reussi() ? 'C\'est fait !' : textes().titre" [intro]="reussi() || lienIncomplet() ? undefined : textes().intro">
+  @if (reussi()) {
+    <div class="resultat" role="status">
+      <span class="resultat-icone"><mat-icon>check</mat-icon></span>
+      <p>{{ textes().succes }}</p>
+      <a mat-flat-button class="bouton-envoi bouton-marque" routerLink="/connexion">Se connecter</a>
+    </div>
+  } @else if (lienIncomplet()) {
+    <div class="resultat" role="alert">
+      <span class="resultat-icone resultat-erreur"><mat-icon>link_off</mat-icon></span>
+      <h2>Lien incomplet</h2>
+      <p>
+        Ouvrez le lien directement depuis l'email reçu. S'il a été copié à la main, une partie a pu être perdue.
+      </p>
+      <a mat-stroked-button routerLink="/connexion">Retour à la connexion</a>
+    </div>
+  } @else {
+    @if (erreur(); as message) {
+      <p class="message message-erreur" role="alert">
+        <mat-icon>error_outline</mat-icon>
+        {{ message }}
+      </p>
+    }
+
+    <form class="formulaire-acces" [formGroup]="formulaire" (ngSubmit)="valider()" novalidate>
+      <mat-form-field appearance="outline">
+        <mat-label>Mot de passe</mat-label>
+        <mat-icon matPrefix>lock_outline</mat-icon>
+        <input matInput #champMdp type="password" formControlName="motDePasse" autocomplete="new-password" />
+        <app-bouton-visibilite matSuffix [champ]="champMdp" />
+        <mat-hint>8 caractères minimum</mat-hint>
+        @if (formulaire.controls.motDePasse.hasError('required')) {
+          <mat-error>Le mot de passe est obligatoire</mat-error>
+        } @else if (formulaire.controls.motDePasse.hasError('minlength') || formulaire.controls.motDePasse.hasError('maxlength')) {
+          <mat-error>Entre 8 et 72 caractères</mat-error>
+        } @else if (formulaire.controls.motDePasse.hasError('serveur')) {
+          <mat-error>{{ formulaire.controls.motDePasse.getError('serveur') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Confirmation</mat-label>
+        <mat-icon matPrefix>lock_outline</mat-icon>
+        <input matInput #champConfirmation type="password" formControlName="confirmation" autocomplete="new-password" />
+        <app-bouton-visibilite matSuffix [champ]="champConfirmation" />
+        @if (formulaire.controls.confirmation.hasError('required')) {
+          <mat-error>Confirmez le mot de passe</mat-error>
+        } @else if (formulaire.controls.confirmation.hasError('differents')) {
+          <mat-error>Les deux mots de passe sont différents</mat-error>
+        }
+      </mat-form-field>
+
+      <button mat-flat-button type="submit" class="bouton-envoi bouton-marque" [disabled]="enCours()">
+        @if (enCours()) {
+          <mat-progress-spinner mode="indeterminate" diameter="22" />
+        } @else {
+          {{ textes().bouton }}
+        }
+      </button>
+    </form>
+  }
+</app-page-acces>

@@ -1,0 +1,839 @@
+// =====================================================================================
+// Identité visuelle de GestionPatient : thème, polices et styles communs à tous les écrans.
+// Changer une couleur ou un arrondi ICI le change partout. Les écrans n'écrivent pas de couleurs en dur :
+// ils utilisent les variables Material (--mat-sys-...) ou les variables de marque (--gp-...).
+// =====================================================================================
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+  // Thème Material 3 : cyan (santé, confiance) et bleu en couleur d'accent.
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$cyan-palette,
+        tertiary: mat.$azure-palette,
+      ),
+      typography: (
+        plain-family: 'Inter, Roboto, sans-serif',
+        brand-family: '"Plus Jakarta Sans", Inter, sans-serif',
+        bold-weight: 700,
+        medium-weight: 600,
+        regular-weight: 400,
+      ),
+      density: 0,
+    )
+  );
+}
+
+:root {
+  // Marque
+  --gp-degrade: linear-gradient(135deg, #0a7b8c 0%, #0b5d8f 55%, #123f7a 100%);
+  --gp-ombre-douce: 0 1px 2px rgb(16 42 67 / 6%), 0 8px 24px rgb(16 42 67 / 8%);
+  --gp-ombre-survol: 0 2px 4px rgb(16 42 67 / 8%), 0 16px 40px rgb(16 42 67 / 14%);
+  --gp-arrondi: 16px;
+  --gp-police-titres: 'Plus Jakarta Sans', Inter, sans-serif;
+
+  // La palette cyan de Material donne des « conteneurs » fluo : on les adoucit.
+  // (:root l'emporte sur les variables que mat.theme() pose sur html.)
+  --mat-sys-primary-container: #d6eff3;
+  --mat-sys-on-primary-container: #0b4954;
+
+  // Composants Material : arrondis et hauteurs de toute l'application.
+  --mat-button-filled-container-shape: 12px;
+  --mat-button-filled-container-height: 48px;
+  --mat-button-outlined-container-shape: 12px;
+  --mat-button-text-container-shape: 12px;
+  --mat-form-field-outlined-container-shape: 12px;
+  --mat-card-outlined-container-shape: var(--gp-arrondi);
+  --mat-card-elevated-container-shape: var(--gp-arrondi);
+}
+
+body {
+  color-scheme: light;
+  background-color: var(--mat-sys-surface-container-lowest);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+  margin: 0;
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--gp-police-titres);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+a {
+  color: var(--mat-sys-primary);
+}
+
+// Chrome colore en bleu les champs qu'il remplit tout seul : on garde le fond du formulaire.
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--mat-sys-on-surface);
+  -webkit-box-shadow: 0 0 0 1000px var(--mat-sys-surface-container-lowest) inset;
+  transition: background-color 9999s ease-out;
+}
+
+// ---------- Mise en page ----------
+
+// Contenu d'une page connectée, centré et lisible sur grand écran.
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+
+  @media (max-width: 600px) {
+    padding: 20px 16px 32px;
+  }
+}
+
+.page-titre {
+  font: var(--mat-sys-headline-small);
+  font-family: var(--gp-police-titres);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.sous-titre {
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0;
+}
+
+.grille-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+// Carte cliquable (accueil, choix de l'établissement...) : se soulève au survol.
+.carte-action {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  border-radius: var(--gp-arrondi);
+  background: var(--mat-sys-surface-container-lowest);
+  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: var(--gp-ombre-douce);
+  color: inherit;
+  text-decoration: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-3px);
+    box-shadow: var(--gp-ombre-survol);
+    border-color: var(--mat-sys-primary);
+    outline: none;
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.6;
+    transform: none;
+  }
+
+  h3 {
+    font-size: 1.05rem;
+  }
+
+  p {
+    margin: 0;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+// Pastille ronde colorée qui porte une icône.
+.pastille {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+  flex-shrink: 0;
+
+  &.pastille-tertiaire {
+    background: var(--mat-sys-tertiary-container);
+    color: var(--mat-sys-on-tertiary-container);
+  }
+}
+
+.lien-fleche {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+  font-weight: 600;
+  color: var(--mat-sys-primary);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+  }
+}
+
+.carte-action:hover .lien-fleche mat-icon {
+  transform: translateX(4px);
+}
+
+// Petite étiquette (rôle, statut...).
+.etiquette {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font: var(--mat-sys-label-medium);
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+// ---------- Messages ----------
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin: 0 0 16px;
+  font: var(--mat-sys-body-medium);
+
+  mat-icon {
+    flex-shrink: 0;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.message-erreur {
+  background-color: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.message-info {
+  background-color: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+// ---------- Pages d'accès (connexion, inscription, activation...) : vitrine à gauche, formulaire à droite ----------
+
+.acces {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  min-height: 100vh;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.acces-vitrine {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 48px 56px;
+  background: var(--gp-degrade);
+  color: #fff;
+
+  // Halos décoratifs.
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(2px);
+    pointer-events: none;
+  }
+
+  &::before {
+    width: 420px;
+    height: 420px;
+    top: -140px;
+    right: -120px;
+    background: radial-gradient(circle, rgb(255 255 255 / 18%), transparent 70%);
+  }
+
+  &::after {
+    width: 360px;
+    height: 360px;
+    bottom: -160px;
+    left: -100px;
+    background: radial-gradient(circle, rgb(94 234 212 / 25%), transparent 70%);
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (max-width: 900px) {
+    display: none;
+  }
+}
+
+.acces-accroche {
+  max-width: 460px;
+
+  h2 {
+    font-size: clamp(2rem, 3.2vw, 2.75rem);
+    line-height: 1.15;
+    font-weight: 800;
+    margin-bottom: 16px;
+  }
+
+  p {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    opacity: 0.88;
+    margin: 0;
+  }
+}
+
+.acces-atouts {
+  list-style: none;
+  padding: 0;
+  margin: 32px 0 0;
+  display: grid;
+  gap: 18px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  strong {
+    display: block;
+    font-weight: 600;
+  }
+
+  span {
+    opacity: 0.8;
+    font-size: 0.92rem;
+  }
+}
+
+// Pastille translucide sur fond coloré.
+.pastille-verre {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 14%);
+  border: 1px solid rgb(255 255 255 / 22%);
+  backdrop-filter: blur(6px);
+  flex-shrink: 0;
+}
+
+.acces-confiance {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  opacity: 0.85;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.acces-zone {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 48px 24px;
+  background: var(--mat-sys-surface-container-lowest);
+}
+
+.acces-contenu {
+  width: 100%;
+  max-width: 420px;
+  animation: apparition 0.4s ease-out;
+
+  h1 {
+    font-size: 1.85rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+}
+
+// Logo au-dessus du formulaire, seulement quand la vitrine est cachée (téléphone, tablette).
+.logo.logo-mobile {
+  display: none;
+  margin-bottom: 32px;
+
+  @media (max-width: 900px) {
+    display: inline-flex;
+  }
+}
+
+// Bouton principal des pages d'accès : même dégradé que la vitrine.
+.bouton-marque.mat-mdc-unelevated-button:not(:disabled) {
+  background: var(--gp-degrade);
+  color: #fff;
+  box-shadow: 0 8px 20px rgb(11 93 143 / 28%);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 12px 28px rgb(11 93 143 / 36%);
+    transform: translateY(-1px);
+  }
+}
+
+.acces-contenu.acces-contenu-large {
+  max-width: 560px;
+}
+
+// Sur un long formulaire, la vitrine reste visible pendant qu'on fait défiler.
+.acces-vitrine {
+  @media (min-width: 901px) {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    box-sizing: border-box;
+  }
+}
+
+.acces-intro {
+  color: var(--mat-sys-on-surface-variant);
+  line-height: 1.5;
+  margin: 0 0 32px;
+}
+
+.acces-pied {
+  margin-top: 40px;
+  text-align: center;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+@keyframes apparition {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// Logo : icône blanche dans un carré au dégradé de la marque.
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--gp-police-titres);
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  color: inherit;
+  text-decoration: none;
+}
+
+.logo-icone {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--gp-degrade);
+  color: #fff;
+  box-shadow: 0 6px 16px rgb(11 93 143 / 30%);
+
+  .acces-vitrine & {
+    background: rgb(255 255 255 / 16%);
+    border: 1px solid rgb(255 255 255 / 25%);
+    box-shadow: none;
+  }
+}
+
+// Respect du réglage « réduire les animations » du système.
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+// ---------- Formulaires des pages d'accès ----------
+
+.formulaire-acces {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  mat-form-field mat-icon[matPrefix] {
+    margin: 0 4px 0 12px;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+// Deux champs côte à côte (nom et prénom...), l'un sous l'autre sur téléphone.
+.ligne-champs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 12px;
+  // Chaque champ garde sa hauteur (sinon il s'étire à la hauteur de son voisin).
+  align-items: start;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bouton-envoi {
+  width: 100%;
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+
+  mat-progress-spinner {
+    --mat-progress-spinner-active-indicator-color: currentColor;
+    margin: 0 auto;
+  }
+}
+
+.lien-droite {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 8px;
+  font: var(--mat-sys-label-large);
+}
+
+.lien-bas {
+  margin: 28px 0 0;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+
+  a {
+    font-weight: 600;
+    margin-left: 4px;
+  }
+}
+
+.lien-droite a,
+.lien-bas a {
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Résultat d'une action (compte créé, email envoyé...) : grande icône et texte centré.
+.resultat {
+  text-align: center;
+  padding: 8px 0;
+
+  .resultat-icone {
+    display: inline-grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    margin-bottom: 16px;
+    background: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
+
+    mat-icon {
+      font-size: 36px;
+      width: 36px;
+      height: 36px;
+    }
+
+    &.resultat-erreur {
+      background: var(--mat-sys-error-container);
+      color: var(--mat-sys-on-error-container);
+    }
+  }
+
+  h2 {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+  }
+
+  p {
+    color: var(--mat-sys-on-surface-variant);
+    line-height: 1.5;
+    margin: 0 0 24px;
+  }
+}
+
+// Titre d'une partie d'un long formulaire (inscription).
+.etape-formulaire {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--mat-sys-primary);
+
+  &:first-child {
+    margin-top: 0;
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .facultatif {
+    font: var(--mat-sys-label-medium);
+    color: var(--mat-sys-on-surface-variant);
+    font-weight: 400;
+  }
+}
+
+// Choix à boutons (sexe) aligné avec les champs Material.
+.champ-sexe {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 22px;
+
+  mat-button-toggle-group {
+    --mat-button-toggle-shape: 12px;
+    height: 56px;
+    align-items: center;
+  }
+
+  mat-button-toggle {
+    flex: 1;
+  }
+}
+
+.libelle-champ {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Libellé posé sur le bord du cadre, comme le libellé flottant d'un champ Material.
+.champ-sexe .libelle-champ {
+  position: absolute;
+  top: -8px;
+  left: 12px;
+  z-index: 1;
+  padding: 0 4px;
+  background: var(--mat-sys-surface-container-lowest);
+}
+
+.erreur-champ {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-error);
+  padding-left: 16px;
+}
+
+.option-detail {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.9em;
+}
+
+.champ-clinique {
+  margin-bottom: 24px;
+}
+
+.lien-bas.lien-secondaire {
+  margin-top: 12px;
+
+  a {
+    font-weight: 500;
+  }
+}
+
+// Bouton d'une action qui retire un accès (suspendre, désactiver).
+.bouton-danger.mat-mdc-unelevated-button:not(:disabled) {
+  background: var(--mat-sys-error);
+  color: var(--mat-sys-on-error);
+}
+
+// ---------- Pages de gestion (personnel, établissements) ----------
+
+.tete-page {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+// Liste en lignes : avatar, informations, statut, actions.
+.liste-gestion {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--gp-arrondi);
+  background: var(--mat-sys-surface-container-lowest);
+  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: var(--gp-ombre-douce);
+  overflow: hidden;
+}
+
+.ligne-gestion {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .infos {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+
+    strong {
+      font-weight: 600;
+    }
+
+    span {
+      color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-body-small);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+
+    .statut {
+      grid-column: 2;
+      justify-self: start;
+    }
+  }
+}
+
+.avatar-ligne {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+  font-weight: 700;
+}
+
+// Étiquettes de statut.
+.statut {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font: var(--mat-sys-label-medium);
+  white-space: nowrap;
+
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+}
+
+.statut-actif {
+  background: #dcf5e6;
+  color: #17663a;
+}
+
+.statut-attente {
+  background: #fff1d6;
+  color: #8a5a00;
+}
+
+.statut-suspendu {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.barre-outils {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+
+  mat-form-field {
+    flex: 1 1 240px;
+  }
+
+  mat-button-toggle-group {
+    --mat-button-toggle-shape: 12px;
+  }
+}
+
+.etat-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 56px 16px;
+  text-align: center;
+
+  h2 {
+    font-size: 1.2rem;
+    margin-top: 8px;
+  }
+
+  p {
+    margin: 0 0 12px;
+    color: var(--mat-sys-on-surface-variant);
+    max-width: 440px;
+  }
+}
+
+// Formulaires dans une boîte de dialogue.
+.formulaire-dialogue {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px !important;
+  min-width: min(480px, 80vw);
+}
+
+.choix-role {
+  --mat-button-toggle-shape: 12px;
+  width: 100%;
+  margin-bottom: 16px;
+
+  mat-button-toggle {
+    flex: 1;
+  }
+}

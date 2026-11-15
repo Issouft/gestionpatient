@@ -1,0 +1,69 @@
+<section class="page">
+  <div class="tete-page">
+    <div>
+      <h1 class="page-titre">Établissements</h1>
+      <p class="sous-titre">
+        {{ etablissements().length }} établissement(s) sur la plateforme, dont {{ nombreActifs() }} actif(s).
+        Vous voyez leur fiche, jamais leurs données.
+      </p>
+    </div>
+    <button mat-flat-button class="bouton-marque" (click)="creer()">
+      <mat-icon>add_business</mat-icon> Créer un établissement
+    </button>
+  </div>
+
+  <div class="barre-outils">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Rechercher</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" placeholder="Nom ou ville" />
+    </mat-form-field>
+  </div>
+
+  @if (chargement()) {
+    <div class="etat-page"><mat-progress-spinner mode="indeterminate" diameter="40" /></div>
+  } @else if (erreur(); as message) {
+    <p class="message message-erreur" role="alert"><mat-icon>error_outline</mat-icon>{{ message }}</p>
+  } @else if (etablissements().length === 0) {
+    <div class="etat-page">
+      <span class="pastille"><mat-icon>domain</mat-icon></span>
+      <h2>Aucun établissement</h2>
+      <p>Créez le premier établissement, puis invitez son administrateur.</p>
+      <button mat-flat-button class="bouton-marque" (click)="creer()">Créer un établissement</button>
+    </div>
+  } @else if (affiches().length === 0) {
+    <div class="etat-page">
+      <span class="pastille"><mat-icon>search_off</mat-icon></span>
+      <p>Aucun établissement ne correspond à cette recherche.</p>
+    </div>
+  } @else {
+    <div class="liste-gestion">
+      @for (etab of affiches(); track etab.id) {
+        <div class="ligne-gestion">
+          <span class="avatar-ligne"><mat-icon>{{ icones[etab.type] }}</mat-icon></span>
+          <div class="infos">
+            <strong>{{ etab.nom }}</strong>
+            <span>
+              {{ libellesTypes[etab.type] }}@if (etab.ville) { · {{ etab.ville }}}@if (etab.telephone) { · {{ etab.telephone }}}
+            </span>
+          </div>
+          <span [class]="'statut ' + (etab.actif ? 'statut-actif' : 'statut-suspendu')">
+            {{ etab.actif ? 'Actif' : 'Désactivé' }}
+          </span>
+          <button mat-icon-button [matMenuTriggerFor]="actions" [disabled]="actionEnCours() === etab.id" [attr.aria-label]="'Actions pour ' + etab.nom">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #actions="matMenu" xPosition="before">
+            <button mat-menu-item (click)="modifier(etab)"><mat-icon>edit</mat-icon>Modifier la fiche</button>
+            <button mat-menu-item (click)="inviterAdministrateur(etab)"><mat-icon>person_add</mat-icon>Inviter l'administrateur</button>
+            @if (etab.actif) {
+              <button mat-menu-item (click)="desactiver(etab)"><mat-icon>block</mat-icon>Désactiver</button>
+            } @else {
+              <button mat-menu-item (click)="reactiver(etab)"><mat-icon>lock_open</mat-icon>Réactiver</button>
+            }
+          </mat-menu>
+        </div>
+      }
+    </div>
+  }
+</section>

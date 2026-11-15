@@ -1,0 +1,68 @@
+<h2 mat-dialog-title>Inviter un membre du personnel</h2>
+
+<form [formGroup]="formulaire" (ngSubmit)="inviter()" novalidate>
+  <mat-dialog-content class="formulaire-dialogue">
+    <p class="sous-titre">La personne recevra un email pour choisir elle-même son mot de passe.</p>
+
+    @if (erreur(); as message) {
+      <p class="message message-erreur" role="alert"><mat-icon>error_outline</mat-icon>{{ message }}</p>
+    }
+
+    <mat-button-toggle-group formControlName="role" aria-label="Rôle" [hideSingleSelectionIndicator]="true" class="choix-role">
+      @for (role of roles; track role.valeur) {
+        <mat-button-toggle [value]="role.valeur">{{ role.libelle }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+
+    <div class="ligne-champs">
+      <mat-form-field appearance="outline">
+        <mat-label>Prénom</mat-label>
+        <input matInput formControlName="prenom" />
+        @if (formulaire.controls.prenom.hasError('required')) { <mat-error>Le prénom est obligatoire</mat-error> }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Nom</mat-label>
+        <input matInput formControlName="nom" />
+        @if (formulaire.controls.nom.hasError('required')) { <mat-error>Le nom est obligatoire</mat-error> }
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Email</mat-label>
+      <input matInput type="email" formControlName="email" placeholder="nom@clinique.sn" />
+      @if (formulaire.controls.email.hasError('required')) {
+        <mat-error>L'email est obligatoire</mat-error>
+      } @else if (formulaire.controls.email.hasError('email')) {
+        <mat-error>Le format de l'email est invalide</mat-error>
+      } @else if (formulaire.controls.email.hasError('serveur')) {
+        <mat-error>{{ formulaire.controls.email.getError('serveur') }}</mat-error>
+      }
+    </mat-form-field>
+
+    @if (estMedecin()) {
+      <div class="ligne-champs">
+        <mat-form-field appearance="outline">
+          <mat-label>Spécialité</mat-label>
+          <input matInput formControlName="specialite" placeholder="Cardiologie" />
+          @if (formulaire.controls.specialite.hasError('required')) { <mat-error>La spécialité est obligatoire</mat-error> }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Numéro d'ordre</mat-label>
+          <input matInput formControlName="numeroOrdre" />
+          @if (formulaire.controls.numeroOrdre.hasError('required')) {
+            <mat-error>Le numéro d'ordre est obligatoire</mat-error>
+          } @else if (formulaire.controls.numeroOrdre.hasError('serveur')) {
+            <mat-error>{{ formulaire.controls.numeroOrdre.getError('serveur') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Annuler</button>
+    <button mat-flat-button type="submit" class="bouton-marque" [disabled]="enCours()">
+      @if (enCours()) { <mat-progress-spinner mode="indeterminate" diameter="20" /> } @else { Envoyer l'invitation }
+    </button>
+  </mat-dialog-actions>
+</form>

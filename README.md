@@ -37,9 +37,12 @@ Rendez-vous → Consultation → Ordonnance → Demande de médicament
 
 ### Comment c'est construit
 
-Ce projet est la partie serveur de l'application. C'est une **API** : un programme qui reçoit des demandes et répond avec des données au format JSON. Il ne contient pas d'écrans pour l'instant.
+Le projet a deux parties, dans le même dépôt :
 
-**Technologies :** Java 21, Spring Boot, PostgreSQL et Maven.
+- **le backend** (dossier racine) : une **API**, un programme qui reçoit des demandes et répond avec des données au format JSON ;
+- **le frontend** (dossier `frontend/`) : les écrans, dans le navigateur. Ils appellent l'API. Voir [frontend/README.md](frontend/README.md).
+
+**Technologies :** Java 21, Spring Boot, PostgreSQL et Maven pour le backend ; Angular 21 et Angular Material pour le frontend.
 
 ## Sommaire
 
@@ -58,6 +61,7 @@ Pour comprendre comment le code est organisé, lisez [ARCHITECTURE.md](ARCHITECT
 - **Java 21**
 - **PostgreSQL**, le logiciel qui stocke les données
 - **Git**
+- **Node.js 20 ou plus**, pour le frontend (`node -v` affiche la version)
 - **Un éditeur**, par exemple VS Code
 
 Maven, l'outil qui construit le projet, n'a pas besoin d'être installé : le projet contient déjà le programme `mvnw`, qui s'en occupe.
@@ -141,6 +145,21 @@ Sous Windows, remplacez `./mvnw` par `mvnw.cmd` dans les commandes.
 
 L'application répond ensuite à l'adresse `http://localhost:8081`. Appuyez sur `Ctrl+C` pour l'arrêter.
 
+### Démarrer le frontend
+
+Dans un **second terminal**, l'API étant démarrée :
+
+```bash
+cd frontend
+npm ci      # la première fois, puis après chaque changement de package-lock.json
+npm start
+```
+
+Ouvrez **http://localhost:4200**. Les écrans appellent l'API sur le port 8081. Détails, tests et organisation du code : [frontend/README.md](frontend/README.md).
+
+- L'API n'accepte les appels du navigateur que depuis l'adresse du frontend (CORS). En production, mettez la vraie adresse dans la variable `FRONTEND_URL`.
+- Les liens des emails (activation, mot de passe oublié) mènent aussi à cette adresse.
+
 ### Lancer les tests
 
 Les tests vérifient automatiquement que le code fonctionne. PostgreSQL doit être démarré, et votre fichier `.env` doit être rempli.
@@ -218,8 +237,10 @@ Les routes sont décrites ici. On peut les essayer avec Swagger (voir plus haut)
 | `GET /etablissements` | Super-administrateur | Liste tous les établissements, actifs ou non, triés par nom |
 | `POST /etablissements/{id}/desactivation` | Super-administrateur | Désactive un établissement : tout son personnel perd l'accès tout de suite. Répond `204 No Content` |
 | `POST /etablissements/{id}/reactivation` | Super-administrateur | Réactive un établissement. Répond `204 No Content` |
+| `PUT /etablissements/{id}` | Super-administrateur | Modifie la fiche d'un établissement (mêmes champs et mêmes règles qu'à la création). Ne change pas `actif` |
 | `POST /etablissements/{id}/administrateurs` | Super-administrateur | Invite l'administrateur d'un établissement : compte inactif rattaché à l'établissement, lien d'activation par email. Répond `201 Created` |
 | `GET /annuaire/etablissements` | Publique | Liste les établissements actifs, triés par nom. Filtres facultatifs : `?type=CLINIQUE&ville=Thiès` |
+| `GET /annuaire/etablissements/{id}` | Publique | La fiche publique d'un établissement actif. `404` s'il n'existe pas ou est désactivé |
 | `GET /annuaire/etablissements/{id}/medecins` | Publique | Liste les médecins en activité de cet établissement : nom, prénom et spécialité. Filtre facultatif : `?specialite=Cardiologie` |
 | `POST /patients/moi/etablissements/{id}` | Patient | Le patient rejoint cette clinique : elle pourra voir ses rendez-vous et son dossier. Répond `204 No Content`, même s'il l'avait déjà rejointe |
 | `GET /patients/moi/etablissements` | Patient | Liste les cliniques actives que le patient a rejointes, triées par nom |
@@ -381,6 +402,8 @@ Le super-administrateur crée les établissements de la plateforme. Il voit leur
 
 **3. Lister les établissements :** `GET http://localhost:8081/etablissements`. Le champ `actif` indique si chacun est actif.
 
+**Modifier une fiche :** `PUT http://localhost:8081/etablissements/7`, avec le même corps qu'à la création. Le champ `actif` est ignoré : l'activation a ses propres routes.
+
 **4. Désactiver un établissement :** `POST http://localhost:8081/etablissements/7/desactivation`, **sans corps**. Réponse `204`.
 
 - Tout son personnel perd l'accès à sa requête suivante (`401` avec le code `ACCES_ETABLISSEMENT_RETIRE`), et l'établissement n'est plus proposé à la connexion.
@@ -436,7 +459,7 @@ Le personnel ne s'inscrit pas lui-même : c'est l'administrateur qui crée son c
 
 Le compte est créé **inactif** : il ne peut pas encore se connecter. Un email est envoyé à l'adresse indiquée. Regardez aussi dans les spams. Notez l'`id` de la réponse : il sert à renvoyer l'invitation (étape 4).
 
-**3. Activer le compte :** le lien de l'email mène à une page qui n'existe pas encore. Faites un clic droit sur le lien, puis *Copier l'adresse du lien*, et gardez tout ce qui suit `jeton=`. Ne recopiez pas le jeton à la main : des caractères comme `I`, `l` et `1` se confondent facilement. Puis envoyez `POST http://localhost:8081/auth/activation`, **sans jeton** (*No Auth*) :
+**3. Activer le compte :** le plus simple est d'ouvrir le lien de l'email, le frontend étant démarré (voir « Démarrer le frontend ») : la page d'activation demande le mot de passe et sa confirmation. Pour tester sans le frontend, faites un clic droit sur le lien, puis *Copier l'adresse du lien*, et gardez tout ce qui suit `jeton=`. Ne recopiez pas le jeton à la main : des caractères comme `I`, `l` et `1` se confondent facilement. Puis envoyez `POST http://localhost:8081/auth/activation`, **sans jeton** (*No Auth*) :
 
 ```json
 {
@@ -760,29 +783,43 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 
 ## 5. Où en est le projet
 
-**Ce qui fonctionne :** la Partie 1 (comptes et sécurité) est terminée.
+### Ce qui fonctionne
 
-- L'organisation du code par domaine
-- Des DTO sans entités : ils contiennent des identifiants ou d'autres DTO
-- La gestion commune des erreurs
-- La sécurité : connexion, jetons et routes fermées par défaut
-- L'inscription d'un patient : données vérifiées, mot de passe chiffré, email unique
-- La consultation et la modification de son profil
-- Le changement de son mot de passe, une fois connecté
-- Le mot de passe oublié, avec un lien par email valable 1 heure
-- La création du personnel par l'administrateur, avec une invitation par email
-- Le renvoi d'une invitation, avec un seul lien valide à la fois
-- La liste du personnel, sa suspension et sa réactivation par l'administrateur, dans son établissement seulement
-- La création du super-administrateur au démarrage : il choisit lui-même son mot de passe grâce à un lien envoyé par email
-- La gestion des établissements par le super-administrateur (création, liste, désactivation, réactivation), sans accès à leurs données
-- L'invitation de l'administrateur d'un établissement par le super-administrateur
-- L'annuaire public : les établissements actifs et leurs médecins, consultables sans compte
-- L'adhésion du patient à une ou plusieurs cliniques, à l'inscription ou plus tard
+**Partie 1 (comptes et sécurité) et socle SaaS : terminés, côté backend et côté frontend.**
 
-**Ce qui manque :**
+| Pour qui | Ce qu'il peut faire | Écran (frontend) |
+|---|---|---|
+| Visiteur | Parcourir l'annuaire des établissements et de leurs médecins, sans compte | `/annuaire` |
+| Visiteur | Créer un compte patient, en choisissant sa clinique ; mot de passe oublié | `/inscription`, `/mot-de-passe-oublie` |
+| Patient | Rejoindre une ou plusieurs cliniques, voir ses cliniques | `/annuaire/:id`, `/mes-cliniques` |
+| Tout compte | Voir et modifier son profil, changer son mot de passe | `/profil` |
+| Personnel invité | Activer son compte avec le lien reçu par email | `/activation` |
+| Personnel de plusieurs établissements | Choisir ou changer l'établissement de la session | `/choix-etablissement` |
+| Administrateur | Inviter, suspendre, réactiver le personnel de **son** établissement | `/personnel` |
+| Super-administrateur | Créer, modifier, désactiver, réactiver les établissements, inviter leur administrateur, **sans voir leurs données** | `/etablissements` |
 
-- [ ] **Partie 2 (`rendezvous`) :** écrire les contrôleurs, les services et les repositories.
-- [x] **Partie 3 (`medical`) :** dossier, consultation, ordonnance, médicaments, demandes de disponibilité et rapports. Voir « Le parcours médical (Partie 3) ».
-- [ ] **Décider des droits de chaque rôle :** ce que chacun peut voir et faire.
-- [ ] **Décider comment créer le compte d'un patient sans email** ou qui ne maîtrise pas le numérique : qui le crée, avec quel identifiant.
-- [ ] **Choisir les responsables de chaque partie.** Voir [ARCHITECTURE.md](ARCHITECTURE.md), section 4.
+Et en dessous : la sécurité par jeton avec l'établissement dans le jeton, les permissions décidées dans `RolePermissions`, des erreurs toujours accompagnées d'un `code`, Flyway pour la base, Swagger pour tester, et les tests (backend : `./mvnw test` ; frontend : `npm test` dans `frontend/`).
+
+**Partie 3 (`medical`) :** dossier, consultation, ordonnance, médicaments, demandes de disponibilité et rapports, côté backend. Voir « Le parcours médical (Partie 3) ».
+
+### Ce qui reste à faire
+
+**Parties des collègues**
+
+- [ ] **Partie 2 (`rendezvous`) :** contrôleurs, services et repositories, puis les écrans (prise de rendez-vous depuis la fiche d'une clinique, tableau de bord du patient). La carte « Mes rendez-vous » de l'accueil du patient attend cet écran.
+- [ ] **Partie 3 (`medical`) par établissement :** rattacher dossiers, consultations, ordonnances et médicaments à un établissement, puis les écrans.
+- **Pour ces deux parties, la règle est prête :** une clinique ne voit un patient que s'il l'a rejointe. Le service vérifie `affiliationService.estPatientDe(patientId, connecte.etablissementId())` et répond `404` sinon. Voir [ARCHITECTURE.md](ARCHITECTURE.md), section 7.
+
+**À décider en groupe, avant de coder**
+
+- [ ] **Les droits de chaque rôle :** ce que chacun peut voir et faire. Il suffira ensuite de modifier `RolePermissions` : aucun contrôleur à toucher.
+- [ ] **Le patient sans email** ou qui ne maîtrise pas le numérique : qui crée son compte, avec quel identifiant.
+- [ ] **L'administrateur et les patients de sa clinique :** peut-il voir leur liste ? Si oui : une permission `PATIENT_GERER` pour l'administrateur, une route `GET /patients` limitée à son établissement (avec `AffiliationService.comptesDe`), et des routes pour suspendre ou réactiver l'adhésion d'un patient (`AffiliationService.changerStatut` existe déjà ; le patient suspendu reçoit déjà `403 ADHESION_SUSPENDUE` s'il tente de se réinscrire).
+- [ ] **Un même médecin dans deux cliniques :** aujourd'hui, inviter un email qui a déjà un compte donne `409 EMAIL_DEJA_UTILISE`. Proposition : l'administrateur invite par email ; si le compte existe, la personne reçoit une **demande de rattachement** qu'elle accepte depuis son espace. La réponse à l'administrateur doit rester la même dans les deux cas, pour ne pas révéler quels emails ont un compte. `AffiliationService.affilier` et le choix de l'établissement à la connexion gèrent déjà plusieurs établissements.
+- [ ] **Les responsables de chaque partie.** Voir [ARCHITECTURE.md](ARCHITECTURE.md), section 4.
+
+**Avant une mise en production**
+
+- [ ] Mettre `SWAGGER_ACTIF=false` et la vraie adresse du frontend dans `FRONTEND_URL`.
+- [ ] Mettre la vraie adresse de l'API dans `frontend/src/environments/environment.ts`.
+- [ ] Servir l'API et le frontend en HTTPS.

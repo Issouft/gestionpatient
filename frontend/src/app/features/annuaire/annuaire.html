@@ -1,0 +1,43 @@
+<section class="page">
+  <div class="tete">
+    <h1 class="page-titre">Trouver une clinique</h1>
+    <p class="sous-titre">Cherchez un établissement près de chez vous, puis découvrez les médecins qui y consultent.</p>
+  </div>
+
+  <form class="filtres" [formGroup]="filtres" (ngSubmit)="$event.preventDefault()" role="search">
+    <mat-form-field appearance="outline" class="champ-ville" subscriptSizing="dynamic">
+      <mat-label>Ville</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput formControlName="ville" placeholder="Ex. Thiès" autocomplete="address-level2" />
+    </mat-form-field>
+
+    <mat-button-toggle-group formControlName="type" aria-label="Type d'établissement" [hideSingleSelectionIndicator]="true">
+      <mat-button-toggle value="">Tous</mat-button-toggle>
+      @for (type of types; track type[0]) {
+        <mat-button-toggle [value]="type[0]">{{ type[1] }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+  </form>
+
+  @if (chargement()) {
+    <div class="etat"><mat-progress-spinner mode="indeterminate" diameter="40" /></div>
+  } @else if (erreur(); as message) {
+    <p class="message message-erreur" role="alert"><mat-icon>error_outline</mat-icon>{{ message }}</p>
+  } @else if (etablissements().length === 0) {
+    <div class="etat vide">
+      <span class="pastille"><mat-icon>search_off</mat-icon></span>
+      <h2>Aucun établissement trouvé</h2>
+      <p>Essayez une autre ville, ou retirez le filtre de type.</p>
+      <button type="button" class="lien-action" (click)="effacerFiltres()">Effacer les filtres</button>
+    </div>
+  } @else {
+    <p class="compte-resultats" role="status">
+      {{ etablissements().length }} établissement{{ etablissements().length > 1 ? 's' : '' }}
+    </p>
+    <div class="grille-cartes">
+      @for (etab of etablissements(); track etab.id) {
+        <app-carte-etablissement [etablissement]="etab" [rejointe]="estRejointe(etab.id)" />
+      }
+    </div>
+  }
+</section>

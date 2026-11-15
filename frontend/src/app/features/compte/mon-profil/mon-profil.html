@@ -1,0 +1,29 @@
+@if (profil(); as moi) {
+  <section class="page">
+    <div class="entete">
+      <span class="grand-avatar">{{ initiales() }}</span>
+      <div>
+        <h1 class="page-titre">{{ moi.prenom }} {{ moi.nom }}</h1>
+        <span class="etiquette"><mat-icon>badge</mat-icon>{{ libelleRole() }}</span>
+      </div>
+      <div class="actions-profil">
+        <button mat-stroked-button (click)="modifier()"><mat-icon>edit</mat-icon> Modifier</button>
+        <button mat-stroked-button (click)="changerMotDePasse()"><mat-icon>key</mat-icon> Mot de passe</button>
+      </div>
+    </div>
+
+    <h2 class="titre-section">Mes informations</h2>
+
+    <div class="tuiles">
+      @for (info of informations(); track info.libelle) {
+        <div class="tuile">
+          <span class="pastille"><mat-icon>{{ info.icone }}</mat-icon></span>
+          <div>
+            <span class="tuile-libelle">{{ info.libelle }}</span>
+            <span class="tuile-valeur">{{ info.valeur }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+}

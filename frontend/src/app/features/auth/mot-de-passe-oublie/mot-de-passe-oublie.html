@@ -1,0 +1,48 @@
+<app-page-acces
+  [titre]="emailEnvoye() ? 'Vérifiez vos emails' : 'Mot de passe oublié'"
+  [intro]="emailEnvoye() ? undefined : 'Indiquez votre email : nous vous enverrons un lien pour choisir un nouveau mot de passe.'"
+>
+  @if (emailEnvoye(); as email) {
+    <div class="resultat" role="status">
+      <span class="resultat-icone"><mat-icon>mark_email_read</mat-icon></span>
+      <p>
+        Si un compte existe pour <strong>{{ email }}</strong>, un email vient d'être envoyé.
+        Le lien est valable <strong>1 heure</strong> et ne sert qu'une fois. Pensez à regarder dans les indésirables.
+      </p>
+      <a mat-stroked-button routerLink="/connexion">Retour à la connexion</a>
+    </div>
+  } @else {
+    @if (erreur(); as message) {
+      <p class="message message-erreur" role="alert">
+        <mat-icon>error_outline</mat-icon>
+        {{ message }}
+      </p>
+    }
+
+    <form class="formulaire-acces" [formGroup]="formulaire" (ngSubmit)="envoyer()" novalidate>
+      <mat-form-field appearance="outline">
+        <mat-label>Email</mat-label>
+        <mat-icon matPrefix>mail_outline</mat-icon>
+        <input matInput type="email" formControlName="email" autocomplete="email" placeholder="nom@exemple.sn" />
+        @if (formulaire.controls.email.hasError('required')) {
+          <mat-error>L'email est obligatoire</mat-error>
+        } @else if (formulaire.controls.email.hasError('email')) {
+          <mat-error>Le format de l'email est invalide</mat-error>
+        }
+      </mat-form-field>
+
+      <button mat-flat-button type="submit" class="bouton-envoi bouton-marque" [disabled]="enCours()">
+        @if (enCours()) {
+          <mat-progress-spinner mode="indeterminate" diameter="22" />
+        } @else {
+          Recevoir le lien
+        }
+      </button>
+    </form>
+
+    <p class="lien-bas">
+      Vous vous en souvenez ?
+      <a routerLink="/connexion">Se connecter</a>
+    </p>
+  }
+</app-page-acces>

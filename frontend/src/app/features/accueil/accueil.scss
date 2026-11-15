@@ -1,0 +1,87 @@
+.bandeau {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 36px 40px;
+  border-radius: 24px;
+  background: var(--gp-degrade);
+  color: #fff;
+  box-shadow: 0 18px 40px rgb(11 93 143 / 25%);
+
+  h1 {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 800;
+  }
+
+  @media (max-width: 600px) {
+    padding: 24px;
+  }
+}
+
+.bandeau-sur-titre {
+  margin: 0 0 4px;
+  opacity: 0.85;
+  font-size: 1.05rem;
+}
+
+.bandeau-etiquettes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.etiquette-claire {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 16%);
+  border: 1px solid rgb(255 255 255 / 24%);
+  font: var(--mat-sys-label-large);
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.bandeau-illustration {
+  font-size: 120px;
+  width: 120px;
+  height: 120px;
+  opacity: 0.18;
+  margin-right: -10px;
+
+  @media (max-width: 600px) {
+    display: none;
+  }
+}
+
+.titre-section {
+  margin-top: 36px;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.bientot {
+  cursor: default;
+  box-shadow: none;
+  background: var(--mat-sys-surface-container-low);
+
+  &:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--mat-sys-outline-variant);
+  }
+
+  .etiquette {
+    align-self: flex-start;
+    margin-top: auto;
+  }
+}
