@@ -89,15 +89,13 @@ Un **secret** est une information qui donne un accès, comme un mot de passe. Il
 
 On range donc les secrets dans un fichier nommé `.env`, à la racine du projet. Git ignore ce fichier, qui reste sur votre ordinateur. **Chacun a le sien.**
 
-Créez le fichier `.env` avec ce contenu :
+Le projet contient un modèle, `.env.example`, qui est commité et ne contient aucun secret. Copiez-le, puis remplacez chaque valeur par la vôtre :
 
-```properties
-spring.datasource.password=le_mot_de_passe_de_votre_PostgreSQL
-JWT_SECRET=une_longue_suite_de_caracteres_aleatoires
-spring.mail.username=votre.adresse@gmail.com
-spring.mail.password=le_mot_de_passe_d_application_gmail
-super-administrateur.email=email_du_super_administrateur
+```bash
+cp .env.example .env
 ```
+
+Sous Windows : `copy .env.example .env`.
 
 | Ligne | À quoi elle sert |
 |---|---|
