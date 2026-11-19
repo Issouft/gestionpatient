@@ -126,7 +126,7 @@ Le **super-administrateur** gère la plateforme : il crée les établissements e
 
 Au premier démarrage, s'il n'existe aucun super-administrateur, l'application en crée un avec l'email de `.env`. Son compte est **inactif**, et il reçoit un email avec un lien pour choisir **lui-même** son mot de passe. Ainsi, aucun mot de passe n'est écrit dans un fichier, et les développeurs ne le connaissent pas.
 
-- Le lien se termine par `?jeton=...`. Comme pour le personnel, envoyez ce jeton et le mot de passe choisi à `POST /auth/activation` (voir « Créer un membre du personnel », étape 3).
+- Ouvrez le lien avec le frontend démarré : une page demande le mot de passe et sa confirmation. Le pas-à-pas complet est dans « Se connecter aux espaces d'administration (première fois) ».
 - Lien perdu ou expiré ? Redémarrez l'application : tant que le super-administrateur n'a pas activé son compte, un nouveau lien part à chaque démarrage. L'ancien ne marche plus.
 - Si l'email ne part pas, l'application démarre quand même, avec un avertissement dans la console.
 - **L'adresse doit être nouvelle.** Si elle appartient déjà à un compte (patient, administrateur…), le super-administrateur n'est pas créé, et la console affiche une erreur qui le dit. L'application démarre quand même.
@@ -159,6 +159,65 @@ Ouvrez **http://localhost:4200**. Les écrans appellent l'API sur le port 8081. 
 
 - L'API n'accepte les appels du navigateur que depuis l'adresse du frontend (CORS). En production, mettez la vraie adresse dans la variable `FRONTEND_URL`.
 - Les liens des emails (activation, mot de passe oublié) mènent aussi à cette adresse.
+
+### Se connecter aux espaces d'administration (première fois)
+
+**Il n'existe aucun compte administrateur tout prêt, ni de mot de passe à se partager.** Chacun crée les siens sur sa base, dans cet ordre :
+
+```text
+super-administrateur → établissement → administrateur de l'établissement → personnel
+```
+
+Il y a deux espaces différents :
+
+| Compte | Ce qu'il voit après la connexion | Page |
+|---|---|---|
+| **Super-administrateur** | L'onglet **Établissements** : il crée les établissements et invite leurs administrateurs. Pas de personnel, pas de données médicales | `/etablissements` |
+| **Administrateur d'un établissement** | L'onglet **Personnel** : il crée et suspend les médecins, secrétaires et pharmaciens de son établissement | `/personnel` |
+
+Le super-administrateur **n'a pas** l'onglet Personnel : c'est voulu (voir « Le super-administrateur »). Pour gérer du personnel, il faut un compte administrateur, créé aux étapes 4 et 5.
+
+**Avant de commencer :** l'API et le frontend sont démarrés, et votre `.env` contient les lignes `spring.mail.*` et `super-administrateur.email` (voir « Étape 3 : créer le fichier `.env` »). Utilisez des adresses dont **vous lisez les emails** : tous les mots de passe se choisissent depuis un lien reçu par email.
+
+**1. Vérifier la console au démarrage de l'API.** Cherchez une ligne qui contient « Super-administrateur » :
+
+| Ligne affichée | Ce qu'il faut faire |
+|---|---|
+| `Lien d'activation envoyé au super-administrateur : ...` | Tout va bien : passez à l'étape 2 |
+| `Aucun super-administrateur : renseignez super-administrateur.email...` | Ajoutez la ligne dans `.env`, puis redémarrez |
+| `Super-administrateur non créé : ... appartient déjà à un autre compte` | Mettez une **autre** adresse dans `.env`, puis redémarrez |
+| `Lien d'activation du super-administrateur non envoyé...` | L'email n'est pas parti : vérifiez `spring.mail.username` et `spring.mail.password` (mot de passe d'application, sans espaces) et la connexion Internet, puis redémarrez |
+| Aucune de ces lignes | Le super-administrateur a déjà activé son compte : passez à l'étape 3. Mot de passe oublié ? Utilisez le lien « Mot de passe oublié ? » de la page de connexion |
+
+**2. Activer le super-administrateur.** Ouvrez l'email reçu (regardez aussi dans les spams) et cliquez sur le lien. La page `/activation` s'ouvre : choisissez le mot de passe (8 caractères au moins), confirmez-le, puis validez.
+
+**3. Se connecter en super-administrateur.** Sur **http://localhost:4200/connexion**, entrez l'email de `super-administrateur.email` et ce mot de passe. L'onglet **Établissements** apparaît en haut.
+
+**4. Créer un établissement.** Dans *Établissements*, cliquez sur **Créer un établissement**, remplissez au moins le nom et le type, puis validez.
+
+**5. Inviter son administrateur.** Sur la ligne de l'établissement, ouvrez le menu (les trois points) → **Inviter l'administrateur**. Donnez un nom, un prénom et un email :
+
+- l'email doit être **nouveau** : pas celui du super-administrateur, ni d'un patient. Un compte n'a qu'un rôle ;
+- le compte est créé **inactif**, et un email d'activation part à cette adresse.
+
+**6. Activer le compte administrateur.** Déconnectez-vous (menu du compte en haut à droite → *Se déconnecter*), ouvrez l'email reçu par l'administrateur, cliquez sur le lien et choisissez son mot de passe. Le lien est valable 48 heures et ne sert qu'une fois.
+
+**7. Se connecter en administrateur.** Sur `/connexion`, entrez son email et son mot de passe. L'onglet **Personnel** apparaît : c'est l'espace d'administration de l'établissement. S'il administre plusieurs établissements, une page lui demande d'abord lequel choisir.
+
+**Si vous aviez déjà une base avant le super-administrateur :** l'ancien administrateur (celui de `administrateur.email`) existe toujours. Il administre la « Clinique principale », avec son ancien mot de passe. Vous pouvez vous connecter avec lui directement à l'étape 7. Mot de passe oublié ? Lien « Mot de passe oublié ? » de la page de connexion.
+
+#### Ça ne marche pas ?
+
+| Ce que vous voyez | La cause probable | Quoi faire |
+|---|---|---|
+| « Identifiants invalides » à la connexion | Mot de passe faux, **ou compte pas encore activé** : le message est le même, pour ne pas révéler quels comptes existent | Vérifiez que vous avez bien cliqué sur le lien d'activation. Sinon, « Mot de passe oublié ? » (marche seulement pour un compte activé) |
+| Aucun email reçu | Spams, adresse mal écrite, ou `spring.mail.*` faux | Regardez les spams et la console de l'API. Super-administrateur : corrigez `.env` et redémarrez l'API, un nouveau lien part. Administrateur : renvoyer son invitation n'existe pas encore, invitez-en un autre avec une autre adresse |
+| « Lien invalide ou expiré » sur la page d'activation | Lien de plus de 48 heures, déjà utilisé, ou remplacé par un plus récent | Utilisez le lien du **dernier** email reçu. Super-administrateur : redémarrez l'API pour en recevoir un nouveau. Administrateur : invitez-en un autre avec une autre adresse |
+| Le lien de l'email ne s'ouvre pas | Le frontend n'est pas démarré | Lancez `npm start` dans `frontend/`, puis rouvrez le lien |
+| Connecté, mais pas d'onglet *Personnel* | Vous êtes connecté en super-administrateur, ou en patient | Connectez-vous avec le compte **administrateur** de l'étape 5 |
+| Connecté, mais pas d'onglet *Établissements* | Vous êtes connecté en administrateur, pas en super-administrateur | Connectez-vous avec l'email de `super-administrateur.email` |
+| Vous avez changé `super-administrateur.email`, mais le lien part toujours à l'ancienne adresse | Le super-administrateur existe déjà en base : la ligne de `.env` ne sert qu'à la **création** | Activez le compte avec l'ancienne adresse, ou supprimez ce super-administrateur de la base, puis redémarrez |
+| « Le serveur ne répond pas » à la connexion | L'API n'est pas démarrée | Démarrez-la (`./mvnw spring-boot:run`) et vérifiez qu'elle répond sur le port 8081 |
 
 ### Lancer les tests
 
@@ -429,7 +488,7 @@ C'est le super-administrateur qui invite l'administrateur d'un établissement. C
 - `409` avec le code `EMAIL_DEJA_UTILISE` : cet email a déjà un compte. Un compte n'a qu'un rôle : choisissez une autre adresse.
 - `404` avec le code `ETABLISSEMENT_INTROUVABLE` : aucun établissement ne porte cet `id`.
 
-**2. Activer le compte :** la personne ouvre le lien reçu par email et choisit son mot de passe. Pour tester sans navigateur : `POST /auth/activation` avec le jeton du lien et le mot de passe, comme pour le personnel (voir « Créer un membre du personnel »).
+**2. Activer le compte :** la personne ouvre le lien reçu par email, avec le frontend démarré, et choisit son mot de passe sur la page `/activation`. Pour tester sans navigateur : `POST /auth/activation` avec le jeton du lien et le mot de passe, comme pour le personnel (voir « Créer un membre du personnel »).
 
 **3. Se connecter :** `POST /auth/connexion`. S'il n'administre qu'un établissement, le jeton le désigne directement. Il peut alors gérer le personnel de cet établissement.
 
@@ -753,6 +812,7 @@ git revert <code-du-commit>    # créer un nouveau commit qui l'annule
 
 | Ce que vous voyez | Ce que ça veut dire | Quoi faire |
 |---|---|---|
+| Impossible d'entrer dans l'espace super-administrateur ou administrateur | Compte pas encore créé ou pas activé, email non reçu... | Suivez « Se connecter aux espaces d'administration (première fois) » et son tableau « Ça ne marche pas ? » |
 | `Could not resolve placeholder 'JWT_SECRET'` | La ligne `JWT_SECRET` manque | Ajoutez-la dans `.env` (étape 3) |
 | `no password was provided` | Le mot de passe de la base n'est pas trouvé | Vérifiez `.env`. Sous Linux, lancez aussi `unset SPRING_DATASOURCE_PASSWORD` |
 | `password authentication failed` | Le mot de passe de la base est faux | Corrigez `spring.datasource.password` dans `.env` |
